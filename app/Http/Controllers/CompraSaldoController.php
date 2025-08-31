@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BodyRequest;
 use App\UseCases\CompraSaldoUseCase;
-use Illuminate\Http\Request;
 
 class CompraSaldoController extends Controller
 {
-    public function compraCredito(Request $request, CompraSaldoUseCase $compraSaldoUseCase)
+    public function compraCredito(BodyRequest $request, CompraSaldoUseCase $compraSaldoUseCase)
     {
         try {
             $result = $compraSaldoUseCase->realizaCompraSaldoCartaoCredito($request->all());
