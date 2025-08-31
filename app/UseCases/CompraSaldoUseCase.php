@@ -24,14 +24,16 @@ class CompraSaldoUseCase
 
     private function _criandoCompraSaldoCredito(array $request): CompraSaldoDTO
     {
+        $objeto = $this->crypto->decrypt($request['body']);
+        $objeto = json_decode($objeto);
         return new CompraSaldoDTO(
-            $this->crypto->decrypt($request['cartaoNumero']),
-            $this->crypto->decrypt($request['cartaoCvv']),
-            $this->crypto->decrypt($request['cartaoMes']),
-            $this->crypto->decrypt($request['cartaoAno']),
-            $request['oidCartao'],
-            $request['cpf'],
-            $request['valorCompra'],
+            $objeto->cartaoNumero,
+            $objeto->cartaoCvv,
+            $objeto->cartaoMes,
+            $objeto->cartaoAno,
+            $objeto->oidCartao,
+            $objeto->cpf,
+            $objeto->valorCompra,
             SituacaoTransacaoEnum::PENDENTE_PAGAMENTO,
             now()->format('Y-m-d H:i:s')
         );

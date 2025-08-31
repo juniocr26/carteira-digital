@@ -16,12 +16,9 @@ class JwtMiddleware
         if (!$authHeader || !str_starts_with($authHeader, 'Bearer ')) {
             return response()->json(['error' => 'Token JWT necessário'], 401);
         }
-
-        // Pega só o token
         $token = substr($authHeader, 7);
 
         try {
-            // Decodifica usando a mesma chave do .env
             $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
             $payload = (array) $decoded;
             $now = time();
@@ -34,15 +31,12 @@ class JwtMiddleware
                     $now > $payload['exp']
                 )
                 {
-                    return response()->json(['error' => 'Token inválido ou expirado'], 401);
+                    return response()->json(['error' => 'Token inválido'], 401);
                 }
             }
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Token inválido ou expirado', 'message' => $e->getMessage()], 401);
+            return response()->json(['error' => 'Token inválido'], 401);
         }
-
-        // Se quiser, pode anexar os dados do token à request
-        $request->attributes->set('jwt_payload', (array) $decoded);
 
         return $next($request);
     }
