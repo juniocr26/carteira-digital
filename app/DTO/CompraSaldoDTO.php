@@ -16,8 +16,8 @@ class CompraSaldoDTO extends DTOBase
         public string $cpf,
         public float $valor_compra,
         public SituacaoTransacaoEnum $situacao_transacao,
-        public string $data_transacao = '',
-        public string $data_pagamento = '',
+        public ?string $data_transacao = null,
+        public ?string $data_pagamento = null,
     ) {}
 
     public function setDataTransacao(string $data_transacao): void

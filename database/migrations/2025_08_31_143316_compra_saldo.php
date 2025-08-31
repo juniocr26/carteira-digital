@@ -3,13 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('compra_saldo', function (Blueprint $table) {
@@ -21,15 +17,13 @@ return new class extends Migration
             $table->string('oid_cartao', 36);
             $table->string('cpf', 11);
             $table->decimal('valor_compra', 10, 2)->default(0);
-            $table->dateTime('data_transacao');
+            $table->string('situacao_transacao', 2);
+            $table->dateTime('data_transacao')->nullable();
             $table->dateTime('data_pagamento')->nullable();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('compra_saldo');

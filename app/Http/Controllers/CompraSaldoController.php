@@ -17,7 +17,6 @@ class CompraSaldoController extends Controller
             return response()->json([
                 'status' => $result->status,
                 'message' => $result->message,
-                'codigo_retorno' => $result->content['codigo_retorno'] ?? null
             ], $statusCode);
         } catch (\Throwable $th) {
             return response()->json([
