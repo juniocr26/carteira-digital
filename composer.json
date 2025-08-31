@@ -8,8 +8,15 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "juniocr26/criptografia-lib": "^1.0.1"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:juniocr26/criptografia_lib.git"
+        }
+    ],
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.2",
