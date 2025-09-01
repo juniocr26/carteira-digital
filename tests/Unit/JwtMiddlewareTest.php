@@ -9,31 +9,38 @@ use Firebase\JWT\JWT;
 
 class JwtMiddlewareTest extends TestCase
 {
-    public function test_handle_with_valid_token()
+    private function createToken(array $overrides = []): string
     {
-        $basicUser = env('BASIC_AUTH_USER');
-        $basicPass = env('BASIC_AUTH_PASS');
-        $secret    = env('JWT_SECRET');
-
-        // cria um token válido
-        $payload = [
-            'user' => $basicUser,
-            'pass' => $basicPass,
+        $payload = array_merge([
+            'user' => env('BASIC_AUTH_USER'),
+            'pass' => env('BASIC_AUTH_PASS'),
             'iat'  => time(),
             'exp'  => time() + 3600,
-        ];
+        ], $overrides);
 
-        $jwt = JWT::encode($payload, $secret, 'HS256');
+        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+    }
 
-        // cria uma request fake com Authorization header
-        $request = Request::create('/fake-route', 'POST');
+    private function createRequest(string $jwt, string $method = 'POST', string $uri = '/fake-route'): Request
+    {
+        $request = Request::create($uri, $method);
         $request->headers->set('Authorization', "Bearer $jwt");
+        return $request;
+    }
 
+    private function runMiddleware(Request $request)
+    {
         $middleware = new JwtMiddleware();
-
-        $response = $middleware->handle($request, function ($req) {
+        return $middleware->handle($request, function ($req) {
             return response()->json(['ok' => true], 200);
         });
+    }
+
+    public function test_handle_with_valid_token()
+    {
+        $jwt      = $this->createToken();
+        $request  = $this->createRequest($jwt);
+        $response = $this->runMiddleware($request);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertJsonStringEqualsJsonString(
@@ -44,30 +51,14 @@ class JwtMiddlewareTest extends TestCase
 
     public function test_handle_token_with_invalid_keys()
     {
-        $basicUser = env('teste_user');
-        $basicPass = env('teste_auth');
-        $secret    = env('JWT_SECRET');
+        $jwt = $this->createToken([
+            'user' => env('teste_user'),
+            'pass' => env('teste_auth'),
+        ]);
 
-        // cria um token válido
-        $payload = [
-            'user' => $basicUser,
-            'pass' => $basicPass,
-            'iat'  => time(),
-            'exp'  => time() + 3600,
-        ];
-
-        $jwt = JWT::encode($payload, $secret, 'HS256');
-
-        // cria uma request fake com Authorization header
-        $request = Request::create('/fake-route', 'POST');
-        $request->headers->set('Authorization', "Bearer $jwt");
-
-        $middleware = new JwtMiddleware();
-
-        $response = $middleware->handle($request, function ($req) {
-            return response()->json(['ok' => true], 200);
-        });
-        $result = json_decode($response->getContent());
+        $request  = $this->createRequest($jwt);
+        $response = $this->runMiddleware($request);
+        $result   = json_decode($response->getContent());
 
         $this->assertEquals(401, $response->getStatusCode());
         $this->assertJson($response->getContent());
@@ -76,29 +67,14 @@ class JwtMiddlewareTest extends TestCase
 
     public function test_handle_with_expired_token()
     {
-        $basicUser = env('BASIC_AUTH_USER');
-        $basicPass = env('BASIC_AUTH_PASS');
-        $secret    = env('JWT_SECRET');
+        $jwt = $this->createToken([
+            'iat' => time() - 7200,
+            'exp' => time() - 3600,
+        ]);
 
-        // token expirado
-        $payload = [
-            'user' => $basicUser,
-            'pass' => $basicPass,
-            'iat'  => time() - 7200,
-            'exp'  => time() - 3600,
-        ];
-
-        $jwt = JWT::encode($payload, $secret, 'HS256');
-
-        $request = Request::create('/fake-route', 'GET');
-        $request->headers->set('Authorization', "Bearer $jwt");
-
-        $middleware = new JwtMiddleware();
-
-        $response = $middleware->handle($request, function ($req) {
-            return response()->json(['ok' => true], 200);
-        });
-        $result = json_decode($response->getContent());
+        $request  = $this->createRequest($jwt, 'GET');
+        $response = $this->runMiddleware($request);
+        $result   = json_decode($response->getContent());
 
         $this->assertEquals(401, $response->getStatusCode());
         $this->assertStringContainsString('Token inválido', $result->error);
