@@ -10,15 +10,15 @@ class CriptografiaTest extends TestCase
     public function testEncryptAndDecryptJsonData(): void
     {
         $originalData = [
-            "cartaoNumero" => "5162-XXXX-XXXX-3306",
-            "cartaoCvv"    => "954",
-            "cartaoMes"    => "10",
-            "cartaoAno"    => "2028",
+            "cartaoNumero" => "9999-9999-9999-999",
+            "cartaoCvv"    => "999",
+            "cartaoMes"    => "01",
+            "cartaoAno"    => "2099",
             "oidCartao"    => "afaf8814-ee53-4f09-88c0-8c1a1a0d9be1",
-            "cpf"          => "09760917637",
-            "valorCompra"  => 200,
-            "nome"         => "Júnio César Rosa",
-            "email"        => "juninhocapitolio@gmail.com"
+            "cpf"          => "00000000000",
+            "valorCompra"  => 1,
+            "nome"         => "Teste Nome",
+            "email"        => "Teste Email"
         ];
 
 
