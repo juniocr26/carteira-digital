@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\BodyRequest;
 use App\UseCases\CompraSaldoUseCase;
+use Illuminate\Http\JsonResponse;
 
 class CompraSaldoController extends Controller
 {
-    public function compraCredito(BodyRequest $request, CompraSaldoUseCase $compraSaldoUseCase)
+    public function compraCredito(BodyRequest $request, CompraSaldoUseCase $compraSaldoUseCase): JsonResponse
     {
         try {
             $result = $compraSaldoUseCase->realizaCompraSaldoCartaoCredito($request->all());

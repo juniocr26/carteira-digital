@@ -7,7 +7,7 @@ use CriptoLib\Crypto;
 
 class CriptografiaTest extends TestCase
 {
-    public function testEncryptAndDecryptJsonData()
+    public function testEncryptAndDecryptJsonData(): void
     {
         $originalData = [
             "cartaoNumero" => "5162-XXXX-XXXX-3306",

@@ -8,7 +8,6 @@ class BodyRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Ajuste conforme sua lógica de autorização
         return true;
     }
 

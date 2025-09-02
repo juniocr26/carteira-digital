@@ -28,7 +28,7 @@ class JwtMiddlewareTest extends TestCase
         return $request;
     }
 
-    private function runMiddleware(Request $request)
+    private function runMiddleware(Request $request): mixed
     {
         $middleware = new JwtMiddleware();
         return $middleware->handle($request, function ($req) {
@@ -36,7 +36,7 @@ class JwtMiddlewareTest extends TestCase
         });
     }
 
-    public function test_handle_with_valid_token()
+    public function test_handle_with_valid_token(): void
     {
         $jwt      = $this->createToken();
         $request  = $this->createRequest($jwt);
@@ -49,7 +49,7 @@ class JwtMiddlewareTest extends TestCase
         );
     }
 
-    public function test_handle_token_with_invalid_keys()
+    public function test_handle_token_with_invalid_keys(): void
     {
         $jwt = $this->createToken([
             'user' => env('teste_user'),
@@ -65,7 +65,7 @@ class JwtMiddlewareTest extends TestCase
         $this->assertStringContainsString('Token inválido', $result->error);
     }
 
-    public function test_handle_with_expired_token()
+    public function test_handle_with_expired_token(): void
     {
         $jwt = $this->createToken([
             'iat' => time() - 7200,

@@ -9,7 +9,7 @@ use Firebase\JWT\Key;
 
 class JwtMiddleware
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): mixed
     {
         $authHeader = $request->header('Authorization');
 
