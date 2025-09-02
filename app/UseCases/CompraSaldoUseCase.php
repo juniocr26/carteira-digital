@@ -9,10 +9,10 @@ use App\DTO\ResponseDTO;
 use App\Repository\CompraSaldoRepository;
 use App\Repository\Interfaces\CompraSaldoRepositoryInterface;
 use Stripe\Stripe;
-use Stripe\PaymentMethod;
 use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use App\Http\Requests\BodyRequest;
 
 class CompraSaldoUseCase
 {
@@ -33,11 +33,13 @@ class CompraSaldoUseCase
                 'amount' => $compraSaldo->valor_compra * 100,
                 'currency' => 'brl',
                 'payment_method' => $compraSaldo->payment_method_id,
-                'confirmation_method' => 'manual',
                 'confirm' => true,
                 'description' => "Compra de saldo para {$compraSaldo->nome} CPF: {$compraSaldo->cpf}",
+                'automatic_payment_methods' => [
+                    'enabled' => true,
+                    'allow_redirects' => 'never',
+                ],
             ]);
-
 
             if ($paymentIntent->status === 'succeeded') {
                 $compraSaldo->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
@@ -59,8 +61,17 @@ class CompraSaldoUseCase
         return $crypto->encrypt($jsonData);
     }
 
-    public function realizarPostParaRotaComprarSaldoCredito(string $body){
+    public function realizarPostParaRotaComprarSaldoCredito(string $body)
+    {
+        $request = BodyRequest::create(
+            route('compra.saldo.credito'), // URL fictícia, não importa
+            'POST',
+            ['body' => $body] // os dados que você quer enviar
+        );
 
+        return app()->call('App\Http\Controllers\CompraSaldoController@compraCredito', [
+            'request' => $request
+        ]);
     }
 
     private function _criandoCompraSaldoCredito(array $request, SituacaoTransacaoEnum $situacaoTransacaoEnum): CompraSaldoDTO

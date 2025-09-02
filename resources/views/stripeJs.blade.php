@@ -7,6 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
@@ -85,6 +87,7 @@
     </main>
 
     <script>
+        // Stripe
         /*
             Exemplos de cartões de teste Stripe (modo sandbox):
 
@@ -101,86 +104,81 @@
             - Fundos insuficientes: 4000 0000 0000 9999
             - 3D Secure obrigatório: 4000 0025 0000 3155
         */
-        // Substitua pela sua Public Key Stripe (modo teste)
         const stripe = Stripe('pk_test_51S2rjtJmY2H3x9sXuUFdZO5GFVJjrkc6Ox3lQvoPXkYpRSyn0l4ojmAFdxDgqCFbVaS0tSP0q6a95PfhoNrRJeey000LQaK07l');
         const elements = stripe.elements();
-        const cardElement = elements.create('card', {
-            hidePostalCode: true
-        });
+        const cardElement = elements.create('card', { hidePostalCode: true });
         cardElement.mount('#card-element');
 
-        // Máscara CPF
+        // Máscaras CPF e CEP
         const cpfInput = document.getElementById('cpf');
         cpfInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, ""); // remove tudo que não é número
-            if (value.length > 11) value = value.slice(0, 11);
+            let value = e.target.value.replace(/\D/g, "").slice(0,11);
             value = value.replace(/(\d{3})(\d)/, "$1.$2");
             value = value.replace(/(\d{3})(\d)/, "$1.$2");
             value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
             e.target.value = value;
         });
 
-        // Máscara CEP
         const zipInput = document.getElementById('zip-code');
         zipInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, "");
-            if (value.length > 8) value = value.slice(0, 8);
-            if (value.length > 5) {
-                value = value.replace(/(\d{5})(\d{1,3})/, "$1-$2");
-            }
+            let value = e.target.value.replace(/\D/g, "").slice(0,8);
+            if (value.length > 5) value = value.replace(/(\d{5})(\d{1,3})/, "$1-$2");
             e.target.value = value;
         });
 
+        // Form submit
         const form = document.getElementById('payment-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const cardholderName = document.getElementById('cardholder-name').value;
-            const cpfMasked = document.getElementById('cpf').value;
-            const cpf = cpfMasked.replace(/\D/g, ""); // remove máscara
+            const cpf = document.getElementById('cpf').value.replace(/\D/g, "");
             const valorCompra = parseFloat(document.getElementById('valor-compra').value);
-            const zipMasked = document.getElementById('zip-code').value;
-            const zipCode = zipMasked.replace(/\D/g, ""); // remove máscara
+            const zipCode = document.getElementById('zip-code').value.replace(/\D/g, "");
 
             if (isNaN(valorCompra) || valorCompra <= 0) {
-                alert('Informe um valor válido para a compra');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Informe um valor válido para a compra'
+                });
                 return;
             }
 
             const { paymentMethod, error } = await stripe.createPaymentMethod({
                 type: 'card',
                 card: cardElement,
-                billing_details: {
-                    name: cardholderName,
-                    address: { postal_code: zipCode }
-                }
+                billing_details: { name: cardholderName, address: { postal_code: zipCode } }
             });
 
-            if(error){
-                document.getElementById('card-errors').textContent = error.message;
+            if (error) {
+                Swal.fire({ icon: 'error', title: 'Erro', text: error.message });
             } else {
-                // Envia pro backend Laravel
-                const response = await fetch("{{ route('stripe.tokenizar') }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    },
-                    body: JSON.stringify({
-                        payment_method_id: paymentMethod.id,
-                        valor_compra: valorCompra,
-                        zip_code: zipCode,
-                        cpf: cpf,
-                        nome: cardholderName
-                    })
-                });
+                try {
+                    const response = await fetch("{{ route('stripe.tokenizar') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            payment_method_id: paymentMethod.id,
+                            valor_compra: valorCompra,
+                            zip_code: zipCode,
+                            cpf: cpf,
+                            nome: cardholderName
+                        })
+                    });
 
-                const data = await response.json();
+                    const data = await response.json();
 
-                if(data.success){
-                    alert('Pagamento aprovado!');
-                } else {
-                    alert('Erro: ' + (data.error || 'Tente novamente'));
+                    if (data.status === 'sucesso') {
+                        Swal.fire({ icon: 'success', title: 'Sucesso', text: data.message });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Tente novamente' });
+                    }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao processar pagamento' });
                 }
             }
         });

@@ -23,10 +23,10 @@ class CompraSaldoController extends Controller
         return view('stripeJs');
     }
 
-    public function stripeTokenizar(Request $request)
+    public function stripeTokenizar(Request $request): JsonResponse
     {
         $body = $this->compraSaldoUseCase->criptografarDadosCompraParaRealizarVenda($request);
-        $this->compraSaldoUseCase->realizarPostParaRotaComprarSaldoCredito($body);
+        return $this->compraSaldoUseCase->realizarPostParaRotaComprarSaldoCredito($body);
     }
 
     public function compraCredito(BodyRequest $request): JsonResponse
