@@ -8,16 +8,12 @@ use App\Enums\SituacaoTransacaoEnum;
 class CompraSaldoDTO extends DTOBase
 {
     public function __construct(
-        public string $cartao_numero,
-        public string $cartao_cvv,
-        public string $cartao_mes,
-        public string $cartao_ano,
-        public string $oid_cartao,
-        public string $cpf,
+        public string $payment_method_id,
+        public string $zip_code,
         public float $valor_compra,
         public SituacaoTransacaoEnum $situacao_transacao,
         public string $nome,
-        public string $email,
+        public string $cpf,
         public ?string $data_transacao = null,
         public ?string $data_pagamento = null,
     ) {}

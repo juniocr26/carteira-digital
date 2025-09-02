@@ -10,19 +10,14 @@ return new class extends Migration
     {
         Schema::create('compra_saldo', function (Blueprint $table) {
             $table->string('oid_compra_saldo', 36)->primary()->default(DB::raw('(UUID())'));
-            $table->string('cartao_numero', 19);
-            $table->string('cartao_cvv', 3);
-            $table->string('cartao_mes', 2);
-            $table->string('cartao_ano', 4);
-            $table->string('oid_cartao', 36);
-            $table->string('cpf', 11);
+            $table->string('payment_method_id');
+            $table->string('zip_code');
             $table->decimal('valor_compra', 10, 2)->default(0);
             $table->string('situacao_transacao', 2);
             $table->string('nome');
-            $table->string('email');
+            $table->string('cpf', 20);
             $table->dateTime('data_transacao')->nullable();
             $table->dateTime('data_pagamento')->nullable();
-            $table->timestamps();
         });
     }
 

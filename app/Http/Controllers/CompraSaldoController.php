@@ -2,16 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use CriptoLib\Crypto;
+use Illuminate\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Http\Requests\BodyRequest;
 use App\UseCases\CompraSaldoUseCase;
-use Illuminate\Http\JsonResponse;
 
 class CompraSaldoController extends Controller
 {
-    public function compraCredito(BodyRequest $request, CompraSaldoUseCase $compraSaldoUseCase): JsonResponse
+    private CompraSaldoUseCase $compraSaldoUseCase;
+
+    public function __construct(CompraSaldoUseCase $compraSaldoUseCase)
+    {
+        $this->compraSaldoUseCase = $compraSaldoUseCase;
+    }
+
+    public function stripeJs(): View
+    {
+        return view('stripeJs');
+    }
+
+    public function stripeTokenizar(Request $request)
+    {
+        $body = $this->compraSaldoUseCase->criptografarDadosCompraParaRealizarVenda($request);
+        $this->compraSaldoUseCase->realizarPostParaRotaComprarSaldoCredito($body);
+    }
+
+    public function compraCredito(BodyRequest $request): JsonResponse
     {
         try {
-            $result = $compraSaldoUseCase->realizaCompraSaldoCartaoCredito($request->all());
+            $result = $this->compraSaldoUseCase->realizaCompraSaldoCartaoCredito($request->all());
             if ($result->status == 'sucesso') { $statusCode = 201; }
             if ($result->status == 'erro') { $statusCode = 400; }
 

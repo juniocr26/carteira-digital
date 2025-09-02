@@ -13,17 +13,13 @@ class CompraSaldo extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'cartao_numero',
-        'cartao_cvv',
-        'cartao_mes',
-        'cartao_ano',
-        'oid_cartao',
-        'cpf',
+        'payment_method_id',
+        'zip_code',
         'valor_compra',
-        'data_transacao',
-        'data_pagamento',
         'situacao_transacao',
         'nome',
-        'email'
+        'cpf',
+        'data_transacao',
+        'data_pagamento',
     ];
 }

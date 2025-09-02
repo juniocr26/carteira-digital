@@ -17,19 +17,16 @@ class CompraSaldoRepository implements CompraSaldoRepositoryInterface {
         $this->compraSaldoModel::updateOrCreate(
             [
                 'cpf' => $compraSaldo->cpf,
-                'oid_cartao' => $compraSaldo->oid_cartao
             ],
             [
-                'cartao_numero'         => $compraSaldo->cartao_numero,
-                'cartao_cvv'            => $compraSaldo->cartao_cvv,
-                'cartao_mes'            => $compraSaldo->cartao_mes,
-                'cartao_ano'            => $compraSaldo->cartao_ano,
+                'payment_method_id'     => $compraSaldo->payment_method_id,
+                'zip_code'              => $compraSaldo->zip_code,
                 'valor_compra'          => $compraSaldo->valor_compra,
-                'data_transacao'        => $compraSaldo->data_transacao,
-                'data_pagamento'        => $compraSaldo->data_pagamento,
                 'situacao_transacao'    => $compraSaldo->situacao_transacao->value,
                 'nome'                  => $compraSaldo->nome,
-                'email'                 => $compraSaldo->email
+                'cpf'                   => $compraSaldo->cpf,
+                'data_transacao'        => $compraSaldo->data_transacao,
+                'data_pagamento'        => $compraSaldo->data_pagamento,
             ]
         );
     }
@@ -43,16 +40,12 @@ class CompraSaldoRepository implements CompraSaldoRepositoryInterface {
 
     private function _formatarCompraSaldoParaDTO(array $compraSaldo): CompraSaldoDTO {
         return new CompraSaldoDTO(
-            $compraSaldo['cartao_numero'],
-            $compraSaldo['cartao_cvv'],
-            $compraSaldo['cartao_mes'],
-            $compraSaldo['cartao_ano'],
-            $compraSaldo['oid_cartao'],
-            $compraSaldo['cpf'],
+            $compraSaldo['payment_method_id'],
+            $compraSaldo['zip_code'],
             $compraSaldo['valor_compra'],
             $compraSaldo['situacao_transacao'],
             $compraSaldo['nome'],
-            $compraSaldo['email']
+            $compraSaldo['cpf']
         );
     }
 }
