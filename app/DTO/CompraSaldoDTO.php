@@ -9,7 +9,6 @@ class CompraSaldoDTO extends DTOBase
 {
     public function __construct(
         public string $payment_method_id,
-        public string $zip_code,
         public float $valor_compra,
         public SituacaoTransacaoEnum $situacao_transacao,
         public string $nome,

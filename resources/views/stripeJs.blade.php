@@ -7,7 +7,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
@@ -56,16 +55,6 @@
                             placeholder="Ex: 150.50" required>
                     </div>
 
-                    <!-- CEP -->
-                    <div>
-                        <label for="zip-code" class="block text-sm font-medium text-gray-700">
-                            CEP
-                        </label>
-                        <input type="text" id="zip-code"
-                            class="mt-1 block w-full rounded-md border-gray-300 bg-white shadow-sm p-3 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            placeholder="00000-000" maxlength="9" required>
-                    </div>
-
                     <!-- Campo do cartão -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Cartão de Crédito</label>
@@ -109,7 +98,7 @@
         const cardElement = elements.create('card', { hidePostalCode: true });
         cardElement.mount('#card-element');
 
-        // Máscaras CPF e CEP
+        // Máscara CPF
         const cpfInput = document.getElementById('cpf');
         cpfInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, "").slice(0,11);
@@ -119,14 +108,6 @@
             e.target.value = value;
         });
 
-        const zipInput = document.getElementById('zip-code');
-        zipInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, "").slice(0,8);
-            if (value.length > 5) value = value.replace(/(\d{5})(\d{1,3})/, "$1-$2");
-            e.target.value = value;
-        });
-
-        // Form submit
         const form = document.getElementById('payment-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -134,21 +115,16 @@
             const cardholderName = document.getElementById('cardholder-name').value;
             const cpf = document.getElementById('cpf').value.replace(/\D/g, "");
             const valorCompra = parseFloat(document.getElementById('valor-compra').value);
-            const zipCode = document.getElementById('zip-code').value.replace(/\D/g, "");
 
             if (isNaN(valorCompra) || valorCompra <= 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erro',
-                    text: 'Informe um valor válido para a compra'
-                });
+                Swal.fire({ icon: 'error', title: 'Erro', text: 'Informe um valor válido para a compra' });
                 return;
             }
 
             const { paymentMethod, error } = await stripe.createPaymentMethod({
                 type: 'card',
                 card: cardElement,
-                billing_details: { name: cardholderName, address: { postal_code: zipCode } }
+                billing_details: { name: cardholderName } // CEP removido
             });
 
             if (error) {
@@ -164,7 +140,6 @@
                         body: JSON.stringify({
                             payment_method_id: paymentMethod.id,
                             valor_compra: valorCompra,
-                            zip_code: zipCode,
                             cpf: cpf,
                             nome: cardholderName
                         })

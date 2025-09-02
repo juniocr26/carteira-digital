@@ -80,7 +80,6 @@ class CompraSaldoUseCase
         $objeto = json_decode($objeto);
         return new CompraSaldoDTO(
             $objeto->payment_method_id,
-            $objeto->zip_code,
             $objeto->valor_compra,
             $situacaoTransacaoEnum,
             $objeto->nome,

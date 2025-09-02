@@ -14,7 +14,6 @@ class CompraSaldo extends Model
 
     protected $fillable = [
         'payment_method_id',
-        'zip_code',
         'valor_compra',
         'situacao_transacao',
         'nome',

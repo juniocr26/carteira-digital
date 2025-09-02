@@ -20,7 +20,6 @@ class CompraSaldoRepository implements CompraSaldoRepositoryInterface {
             ],
             [
                 'payment_method_id'     => $compraSaldo->payment_method_id,
-                'zip_code'              => $compraSaldo->zip_code,
                 'valor_compra'          => $compraSaldo->valor_compra,
                 'situacao_transacao'    => $compraSaldo->situacao_transacao->value,
                 'nome'                  => $compraSaldo->nome,
@@ -41,7 +40,6 @@ class CompraSaldoRepository implements CompraSaldoRepositoryInterface {
     private function _formatarCompraSaldoParaDTO(array $compraSaldo): CompraSaldoDTO {
         return new CompraSaldoDTO(
             $compraSaldo['payment_method_id'],
-            $compraSaldo['zip_code'],
             $compraSaldo['valor_compra'],
             $compraSaldo['situacao_transacao'],
             $compraSaldo['nome'],
