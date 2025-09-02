@@ -18,16 +18,6 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Copiar config do Supervisor
 COPY docker/supervisor/normal.conf /etc/supervisor/conf.d/normal.conf
 
-# Copiar chaves RSA
-COPY docker/rsa/id_rsa /var/www/storage/keys/id_rsa
-COPY docker/rsa/id_rsa.pub /var/www/storage/keys/id_rsa.pub
-
-# Setar permissões das chaves (privada só leitura do dono)
-RUN mkdir -p /var/www/storage/keys \
-    && chown -R www-data:www-data /var/www/storage/keys \
-    && chmod 600 /var/www/storage/keys/id_rsa \
-    && chmod 644 /var/www/storage/keys/id_rsa.pub
-
 # Setar diretório de trabalho
 WORKDIR /var/www
 
