@@ -16,7 +16,9 @@ class CriptografiaTest extends TestCase
             "cartaoAno"    => "2028",
             "oidCartao"    => "afaf8814-ee53-4f09-88c0-8c1a1a0d9be1",
             "cpf"          => "09760917637",
-            "valorCompra"  => 200
+            "valorCompra"  => 200,
+            "nome"         => "Júnio César Rosa",
+            "email"        => "juninhocapitolio@gmail.com"
         ];
 
 

@@ -16,6 +16,8 @@ class CompraSaldoDTO extends DTOBase
         public string $cpf,
         public float $valor_compra,
         public SituacaoTransacaoEnum $situacao_transacao,
+        public string $nome,
+        public string $email,
         public ?string $data_transacao = null,
         public ?string $data_pagamento = null,
     ) {}

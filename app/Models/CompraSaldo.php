@@ -22,6 +22,8 @@ class CompraSaldo extends Model
         'valor_compra',
         'data_transacao',
         'data_pagamento',
-        'situacao_transacao'
+        'situacao_transacao',
+        'nome',
+        'email'
     ];
 }

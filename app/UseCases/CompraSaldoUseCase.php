@@ -8,6 +8,10 @@ use CriptoLib\Crypto;
 use App\DTO\ResponseDTO;
 use App\Repository\CompraSaldoRepository;
 use App\Repository\Interfaces\CompraSaldoRepositoryInterface;
+use Stripe\Stripe;
+use Stripe\PaymentMethod;
+use Stripe\PaymentIntent;
+use Illuminate\Support\Facades\Log;
 
 class CompraSaldoUseCase
 {
@@ -18,11 +22,32 @@ class CompraSaldoUseCase
 
     public function realizaCompraSaldoCartaoCredito(array $request): ResponseDTO
     {
-        $compraSaldo = $this->_criandoCompraSaldoCredito($request);
-        return $this->compraSaldoRepository->updateCompraSaldo($compraSaldo);
+        try {
+            $compraSaldo = $this->_criandoCompraSaldoCredito($request, SituacaoTransacaoEnum::PENDENTE_PAGAMENTO);
+            $this->compraSaldoRepository->updateCompraSaldo($compraSaldo);
+
+            $paymentMethod = PaymentMethod::create([
+                'type' => 'card',
+                'card' => [
+                    'number' => $compraSaldo->cartao_numero,
+                    'exp_month' => $compraSaldo->cartao_mes,
+                    'exp_year' => $compraSaldo->cartao_ano,
+                    'cvc' => $compraSaldo->cartao_cvv,
+                ],
+                'billing_details' => [
+                    'name' => $compraSaldo->nome,
+                    'email' => $compraSaldo->email,
+                ],
+            ]);
+
+            return new ResponseDTO('sucesso', 'Compra com saldo atualizada com sucesso', $compraSaldo);
+        } catch (\Throwable $th) {
+            Log::error("Não foi possível criar a transação de compra de saldo, {$th->getMessage()} | file: {$th->getFile()} | linha: {$th->getLine()} | trace: {$th->getTraceAsString()}");
+            return new ResponseDTO('erro', "Não foi possível criar a transação de compra de saldo");
+        }
     }
 
-    private function _criandoCompraSaldoCredito(array $request): CompraSaldoDTO
+    private function _criandoCompraSaldoCredito(array $request, SituacaoTransacaoEnum $situacaoTransacaoEnum): CompraSaldoDTO
     {
         $objeto = $this->crypto->decrypt($request['body']);
         $objeto = json_decode($objeto);
@@ -34,7 +59,9 @@ class CompraSaldoUseCase
             $objeto->oidCartao,
             $objeto->cpf,
             $objeto->valorCompra,
-            SituacaoTransacaoEnum::PENDENTE_PAGAMENTO,
+            $situacaoTransacaoEnum,
+            $objeto->nome,
+            $objeto->email,
             now()->format('Y-m-d H:i:s')
         );
     }

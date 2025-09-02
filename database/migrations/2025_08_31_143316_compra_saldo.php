@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('cpf', 11);
             $table->decimal('valor_compra', 10, 2)->default(0);
             $table->string('situacao_transacao', 2);
+            $table->string('nome');
+            $table->string('email');
             $table->dateTime('data_transacao')->nullable();
             $table->dateTime('data_pagamento')->nullable();
             $table->timestamps();
