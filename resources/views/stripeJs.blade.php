@@ -124,7 +124,7 @@
             const { paymentMethod, error } = await stripe.createPaymentMethod({
                 type: 'card',
                 card: cardElement,
-                billing_details: { name: cardholderName } // CEP removido
+                billing_details: { name: cardholderName }
             });
 
             if (error) {
