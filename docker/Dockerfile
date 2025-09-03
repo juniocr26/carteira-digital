@@ -23,7 +23,10 @@ WORKDIR /var/www
 
 COPY . .
 
-RUN chown -R www-data:www-data /var/www && chmod -R 755 /var/www
+# Permissões
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www \
+    && chmod +x /var/www/artisan   # <-- garante que o artisan é executável
 
 # Rodar Supervisor como processo principal do container
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf", "-n"]
