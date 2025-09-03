@@ -8,7 +8,7 @@ use App\Repository\Interfaces\TransacaoRepositoryInterface;
 class TransacaoRepository implements TransacaoRepositoryInterface {
 
     public function __construct(
-        private Transacao $transacaoModel = new Transacao()
+        private Transacao $transacaoModel
     ) {}
 
     public function updateTransacao(TransacaoDTO $transacaoDTO): void

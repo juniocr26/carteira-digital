@@ -10,7 +10,7 @@ use App\Enums\TipoTransacaoEnum;
 class SaldoRepository implements SaldoRepositoryInterface {
 
     public function __construct(
-        private Saldo $saldoModel = new Saldo()
+        private Saldo $saldoModel
     ) {}
 
     public function updateSaldo(SaldoDTO $saldoDTO, TipoTransacaoEnum $tipoTransacaoEnum): void

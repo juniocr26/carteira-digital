@@ -23,20 +23,28 @@ use App\Http\Requests\BodyRequest;
 class TransacaoUseCase
 {
     public function __construct(
-        private TransacaoRepositoryInterface $transacaoRepository = new TransacaoRepository(),
-        private SaldoRepositoryInterface $saldoRepository = new SaldoRepository(),
-        private ReprocessamentoComprasCartaoRabbitMQAdapterInterface $reprocessamentoComprasCartaoRabbitMQAdapter = new ReprocessamentoComprasCartaoRabbitMQAdapter(),
-        private $crypto = new Crypto()
+        private TransacaoRepositoryInterface $transacaoRepository,
+        private SaldoRepositoryInterface $saldoRepository,
+        private ReprocessamentoComprasCartaoRabbitMQAdapterInterface $reprocessamentoComprasCartaoRabbitMQAdapter,
+        private Crypto $crypto
     ) {}
+
+    public function retentativaPagamento(TransacaoDTO $transacaoDTO): ResponseDTO
+    {
+        return $this->processarPagamentoStripe($transacaoDTO);
+    }
 
     public function realizaCompraCartaoCredito(array $request): ResponseDTO
     {
+        $transacaoDTO = $this->criarTransacao($request, SituacaoTransacaoEnum::PENDENTE_PAGAMENTO);
+        return $this->processarPagamentoStripe($transacaoDTO);
+    }
+
+    private function processarPagamentoStripe(TransacaoDTO $transacaoDTO): ResponseDTO
+    {
+        Stripe::setApiKey(config('services.stripe.secret'));
+
         try {
-            $transacaoDTO = $this->_criandoTransacao($request, SituacaoTransacaoEnum::PENDENTE_PAGAMENTO);
-            $this->transacaoRepository->updateTransacao($transacaoDTO);
-
-            Stripe::setApiKey(config('services.stripe.secret'));
-
             $paymentIntent = PaymentIntent::create([
                 'amount' => $transacaoDTO->valor_compra * 100,
                 'currency' => 'brl',
@@ -50,54 +58,65 @@ class TransacaoUseCase
             ]);
 
             if ($paymentIntent->status === 'succeeded') {
-                $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
-                $transacaoDTO->data_pagamento = now()->format('Y-m-d H:i:s');
-                $this->transacaoRepository->updateTransacao($transacaoDTO);
-
-                $saldoDTO = $this->_criandoSaldo($transacaoDTO);
-                $this->saldoRepository->updateSaldo($saldoDTO, $transacaoDTO->tipo_transacao);
-
-                return new ResponseDTO('sucesso', 'Compra realizada com sucesso', null);
+                $this->aprovarTransacao($transacaoDTO);
+                return new ResponseDTO('sucesso', 'Compra realizada com sucesso');
             }
 
-            return new ResponseDTO('erro', 'Pagamento não concluído', null);
+            return new ResponseDTO('erro', 'Pagamento não concluído');
 
         } catch (\Stripe\Exception\CardException $e) {
-            // Erro no cartão - não adianta reprocessar
-            $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
-            $transacaoDTO->descricao_transacao = "Cartão recusado para a compra de saldo do cliente {$transacaoDTO->nome} CPF: {$transacaoDTO->cpf}";
-            $this->transacaoRepository->updateTransacao($transacaoDTO);
-            Log::warning("Cartão recusado: {$e->getMessage()}");
-            return new ResponseDTO('erro', 'Cartão recusado', null);
+            $this->recusarTransacao($transacaoDTO, $e->getMessage());
+            return new ResponseDTO('erro', 'Cartão recusado');
 
-        } catch (\Stripe\Exception\RateLimitException|\Stripe\Exception\ApiConnectionException|\Stripe\Exception\ApiErrorException $e) {
-            // Erros temporários - vale reprocessar
-            $transacaoDTO->retentativa = ($transacaoDTO->retentativa + 1);
-            $body = $this->crypto->encrypt($transacaoDTO->__toString());
-            $this->reprocessamentoComprasCartaoRabbitMQAdapter->enfilerarReprocessamentoComprasCartao($body);
-            Log::error("Erro temporário Stripe: {$e->getMessage()}");
-            return new ResponseDTO('erro', 'Erro temporário, pode reprocessar', null);
+        } catch (\Stripe\Exception\RateLimitException|
+                 \Stripe\Exception\ApiConnectionException|
+                 \Stripe\Exception\ApiErrorException $e) {
+            $this->reprocessarTransacao($transacaoDTO, $e->getMessage());
+            return new ResponseDTO('erro', 'Erro temporário, pode reprocessar');
 
         } catch (\Throwable $th) {
-            // Erro inesperado - geralmente não reprocessável
             Log::error("Erro inesperado: {$th->getMessage()} | {$th->getFile()} | linha: {$th->getLine()}");
-            return new ResponseDTO('erro', 'Erro inesperado', null);
+            return new ResponseDTO('erro', 'Erro inesperado');
         }
+    }
+
+    private function aprovarTransacao(TransacaoDTO $transacaoDTO): void
+    {
+        $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
+        $transacaoDTO->data_pagamento = now()->format('Y-m-d H:i:s');
+        $this->transacaoRepository->updateTransacao($transacaoDTO);
+
+        $saldoDTO = $this->criarSaldo($transacaoDTO);
+        $this->saldoRepository->updateSaldo($saldoDTO, $transacaoDTO->tipo_transacao);
+    }
+
+    private function recusarTransacao(TransacaoDTO $transacaoDTO, string $motivo): void
+    {
+        $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
+        $transacaoDTO->descricao_transacao = "Cartão recusado para a compra de saldo do cliente {$transacaoDTO->nome} CPF: {$transacaoDTO->cpf}";
+        $this->transacaoRepository->updateTransacao($transacaoDTO);
+        Log::warning("Cartão recusado: {$motivo}");
+    }
+
+    private function reprocessarTransacao(TransacaoDTO $transacaoDTO, string $erro): void
+    {
+        $transacaoDTO->retentativa++;
+        $body = $this->crypto->encrypt($transacaoDTO->__toString());
+        $this->reprocessamentoComprasCartaoRabbitMQAdapter->enfilerarReprocessamentoComprasCartao($body);
+        Log::error("Erro temporário Stripe: {$erro}");
     }
 
     public function criptografarDadosCompraParaRealizarVenda(Request $request): string
     {
-        $jsonData = json_encode($request->all());
-        $crypto = new Crypto();
-        return $crypto->encrypt($jsonData);
+        return $this->crypto->encrypt(json_encode($request->all()));
     }
 
     public function realizarPostParaRotaComprarSaldoCartaoCredito(string $body)
     {
         $request = BodyRequest::create(
-            route('compra.cartao.credito'), // URL fictícia, não importa
+            route('compra.cartao.credito'),
             'POST',
-            ['body' => $body] // os dados que você quer enviar
+            ['body' => $body]
         );
 
         return app()->call('App\Http\Controllers\TransacaoController@compra_cartao_credito', [
@@ -105,24 +124,22 @@ class TransacaoUseCase
         ]);
     }
 
-    private function _criandoTransacao(array $request, SituacaoTransacaoEnum $situacaoTransacaoEnum): TransacaoDTO
+    private function criarTransacao(array $request, SituacaoTransacaoEnum $situacaoTransacaoEnum): TransacaoDTO
     {
-        $objeto = $this->crypto->decrypt($request['body']);
-        $objeto = json_decode($objeto);
-        $tipo_transacao = TipoTransacaoEnum::from($objeto->tipo_transacao);
+        $transacaoData = json_decode($this->crypto->decrypt($request['body']));
         return new TransacaoDTO(
-            $objeto->payment_method_id,
-            $objeto->valor_compra,
+            $transacaoData->payment_method_id,
+            $transacaoData->valor_compra,
             $situacaoTransacaoEnum,
-            $objeto->descricao_transacao,
-            $tipo_transacao,
-            $objeto->nome,
-            $objeto->cpf,
+            $transacaoData->descricao_transacao,
+            TipoTransacaoEnum::from($transacaoData->tipo_transacao),
+            $transacaoData->nome,
+            $transacaoData->cpf,
             now()->format('Y-m-d H:i:s')
         );
     }
 
-    private function _criandoSaldo(TransacaoDTO $transacaoDTO): SaldoDTO
+    private function criarSaldo(TransacaoDTO $transacaoDTO): SaldoDTO
     {
         return new SaldoDTO(
             $transacaoDTO->cpf,

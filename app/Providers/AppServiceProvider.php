@@ -2,8 +2,14 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Repository\SaldoRepository;
 use Illuminate\Support\Facades\Route;
+use App\Repository\TransacaoRepository;
+use Illuminate\Support\ServiceProvider;
+use App\Repository\Interfaces\SaldoRepositoryInterface;
+use App\Repository\Interfaces\TransacaoRepositoryInterface;
+use App\Adapters\RabbitMQ\ReprocessamentoComprasCartaoRabbitMQAdapter;
+use App\Adapters\RabbitMQ\Interfaces\ReprocessamentoComprasCartaoRabbitMQAdapterInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +18,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            TransacaoRepositoryInterface::class,
+            TransacaoRepository::class
+        );
+
+        $this->app->bind(
+            SaldoRepositoryInterface::class,
+            SaldoRepository::class
+        );
+
+        $this->app->bind(
+            ReprocessamentoComprasCartaoRabbitMQAdapterInterface::class,
+            ReprocessamentoComprasCartaoRabbitMQAdapter::class
+        );
     }
 
     /**

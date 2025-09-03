@@ -40,15 +40,16 @@ abstract class RabbitMQAdapter implements RabbitMQAdapterInterface
             'delivery_mode' => AMQPMessage::DELIVERY_MODE_PERSISTENT,
         ]);
 
-        $channel->basic_publish(
-            $message,
-            $this->exchange,
-            $this->routingKey
-        );
+        $channel->basic_publish($message, $this->exchange, $this->routingKey);
 
         $this->closeConnection();
     }
 
+    /**
+     * Escuta a fila e processa as mensagens.
+     * O callback recebe apenas o AMQPMessage; channel e delivery_tag
+     * devem ser obtidos via $message->delivery_info dentro do callback.
+     */
     public function listenQueue(\Closure $callback): void
     {
         $channel = $this->getChannel();
@@ -58,7 +59,9 @@ abstract class RabbitMQAdapter implements RabbitMQAdapterInterface
 
         $channel->basic_consume(
             queue: $this->queue,
-            callback: $callback
+            callback: function (AMQPMessage $message) use ($callback) {
+                $callback($message);
+            }
         );
 
         while (count($channel->callbacks)) {
