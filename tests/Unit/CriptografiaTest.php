@@ -11,10 +11,11 @@ class CriptografiaTest extends TestCase
     {
         $originalData = [
             "payment_method_id"     => "pm_1S2tzoJmY2H3x9sXSFZ9VWcd",
-            "zip_code"              => "00000000",
             "valor_compra"          => "100",
             "nome"                  => "Teste Nome",
             "cpf"                   => "00000000000",
+            "descricao_transacao"   => "Teste Descrição Transação",
+            "tipo_transacao"        => "Transacao"
         ];
 
 
