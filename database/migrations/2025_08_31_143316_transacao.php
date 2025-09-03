@@ -8,11 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('compra_saldo', function (Blueprint $table) {
-            $table->string('oid_compra_saldo', 36)->primary()->default(DB::raw('(UUID())'));
+        Schema::create('transacao', function (Blueprint $table) {
+            $table->string('oid_transacao', 36)->primary()->default(DB::raw('(UUID())'));
             $table->string('payment_method_id');
             $table->decimal('valor_compra', 10, 2)->default(0);
             $table->string('situacao_transacao', 2);
+            $table->string('descricao_transacao');
+            $table->string('tipo_transacao', 2);
             $table->string('nome');
             $table->string('cpf', 20);
             $table->dateTime('data_transacao')->nullable();
@@ -22,6 +24,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('compra_saldo');
+        Schema::dropIfExists('transacao');
     }
 };

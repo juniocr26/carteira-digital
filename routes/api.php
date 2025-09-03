@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\CompraSaldoController;
+use App\Http\Controllers\TransacaoController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\JwtMiddleware;
 
@@ -15,8 +15,6 @@ use App\Http\Middleware\JwtMiddleware;
 
 Route::aliasMiddleware('jwt.auth', JwtMiddleware::class);
 
-Route::middleware('jwt.auth')->prefix('compra')->group(function () {
-    Route::prefix('saldo')->group(function () {
-        Route::post('/cartaoCredito', [CompraSaldoController::class, 'compraCredito'])->name('compra.saldo.credito');
-    });
+Route::middleware('jwt.auth')->prefix('compra')->name('compra.')->group(function () {
+    Route::post('/cartao_credito', [TransacaoController::class, 'compra_cartao_credito'])->name('cartao.credito');
 });

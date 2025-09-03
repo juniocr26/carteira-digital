@@ -7,15 +7,15 @@ use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\BodyRequest;
-use App\UseCases\CompraSaldoUseCase;
+use App\UseCases\TransacaoUseCase;
 
-class CompraSaldoController extends Controller
+class TransacaoController extends Controller
 {
-    private CompraSaldoUseCase $compraSaldoUseCase;
+    private TransacaoUseCase $transacaoUseCase;
 
-    public function __construct(CompraSaldoUseCase $compraSaldoUseCase)
+    public function __construct(TransacaoUseCase $transacaoUseCase)
     {
-        $this->compraSaldoUseCase = $compraSaldoUseCase;
+        $this->transacaoUseCase = $transacaoUseCase;
     }
 
     public function stripeJs(): View
@@ -25,14 +25,14 @@ class CompraSaldoController extends Controller
 
     public function stripeTokenizar(Request $request): JsonResponse
     {
-        $body = $this->compraSaldoUseCase->criptografarDadosCompraParaRealizarVenda($request);
-        return $this->compraSaldoUseCase->realizarPostParaRotaComprarSaldoCredito($body);
+        $body = $this->transacaoUseCase->criptografarDadosCompraParaRealizarVenda($request);
+        return $this->transacaoUseCase->realizarPostParaRotaComprarSaldoCartaoCredito($body);
     }
 
-    public function compraCredito(BodyRequest $request): JsonResponse
+    public function compra_cartao_credito(BodyRequest $request): JsonResponse
     {
         try {
-            $result = $this->compraSaldoUseCase->realizaCompraSaldoCartaoCredito($request->all());
+            $result = $this->transacaoUseCase->realizaCompraCartaoCredito($request->all());
             if ($result->status == 'sucesso') { $statusCode = 201; }
             if ($result->status == 'erro') { $statusCode = 400; }
 

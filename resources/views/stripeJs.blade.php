@@ -141,7 +141,9 @@
                             payment_method_id: paymentMethod.id,
                             valor_compra: valorCompra,
                             cpf: cpf,
-                            nome: cardholderName
+                            nome: cardholderName,
+                            descricao_transacao: `Compra de saldo para ${cardholderName} CPF: ${cpf}`,
+                            tipo_transacao: '1'
                         })
                     });
 

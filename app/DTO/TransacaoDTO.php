@@ -4,13 +4,16 @@ namespace App\DTO;
 
 use App\DTO\Base\DTOBase;
 use App\Enums\SituacaoTransacaoEnum;
+use App\Enums\TipoTransacaoEnum;
 
-class CompraSaldoDTO extends DTOBase
+class TransacaoDTO extends DTOBase
 {
     public function __construct(
         public string $payment_method_id,
         public float $valor_compra,
         public SituacaoTransacaoEnum $situacao_transacao,
+        public string $descricao_transacao,
+        public TipoTransacaoEnum $tipo_transacao,
         public string $nome,
         public string $cpf,
         public ?string $data_transacao = null,
