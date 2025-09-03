@@ -8,6 +8,8 @@ use App\Enums\TipoTransacaoEnum;
 
 class TransacaoDTO extends DTOBase
 {
+    public int $retentativa = 0;
+
     public function __construct(
         public string $payment_method_id,
         public float $valor_compra,
@@ -20,23 +22,19 @@ class TransacaoDTO extends DTOBase
         public ?string $data_pagamento = null,
     ) {}
 
-    public function setDataTransacao(string $data_transacao): void
+    public function __toString(): string
     {
-        $this->data_transacao = $data_transacao;
-    }
-
-    public function getDataTransacao(): string
-    {
-        return $this->data_transacao;
-    }
-
-    public function setDataPagamento(string $data_pagamento): void
-    {
-        $this->data_pagamento = $data_pagamento;
-    }
-
-    public function getDataPagamento(): string
-    {
-        return $this->data_pagamento;
+        return json_encode([
+            'payment_method_id'   => $this->payment_method_id,
+            'valor_compra'        => $this->valor_compra,
+            'situacao_transacao'  => $this->situacao_transacao->value,
+            'descricao_transacao' => $this->descricao_transacao,
+            'tipo_transacao'      => $this->tipo_transacao->value,
+            'nome'                => $this->nome,
+            'cpf'                 => $this->cpf,
+            'data_transacao'      => $this->data_transacao,
+            'data_pagamento'      => $this->data_pagamento,
+            'retentativa'         => $this->retentativa,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

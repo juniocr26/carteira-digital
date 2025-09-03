@@ -2,6 +2,8 @@
 
 namespace App\UseCases;
 
+use App\Adapters\RabbitMQ\Interfaces\ReprocessamentoComprasCartaoRabbitMQAdapterInterface;
+use App\Adapters\RabbitMQ\ReprocessamentoComprasCartaoRabbitMQAdapter;
 use App\DTO\SaldoDTO;
 use App\DTO\TransacaoDTO;
 use App\Enums\SituacaoTransacaoEnum;
@@ -23,6 +25,7 @@ class TransacaoUseCase
     public function __construct(
         private TransacaoRepositoryInterface $transacaoRepository = new TransacaoRepository(),
         private SaldoRepositoryInterface $saldoRepository = new SaldoRepository(),
+        private ReprocessamentoComprasCartaoRabbitMQAdapterInterface $reprocessamentoComprasCartaoRabbitMQAdapter = new ReprocessamentoComprasCartaoRabbitMQAdapter(),
         private $crypto = new Crypto()
     ) {}
 
@@ -50,14 +53,35 @@ class TransacaoUseCase
                 $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
                 $transacaoDTO->data_pagamento = now()->format('Y-m-d H:i:s');
                 $this->transacaoRepository->updateTransacao($transacaoDTO);
+
                 $saldoDTO = $this->_criandoSaldo($transacaoDTO);
                 $this->saldoRepository->updateSaldo($saldoDTO, $transacaoDTO->tipo_transacao);
+
+                return new ResponseDTO('sucesso', 'Compra realizada com sucesso', null);
             }
-            return new ResponseDTO('sucesso', 'Compra com saldo atualizada com sucesso', $paymentIntent);
+
+            return new ResponseDTO('erro', 'Pagamento não concluído', null);
+
+        } catch (\Stripe\Exception\CardException $e) {
+            // Erro no cartão - não adianta reprocessar
+            $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
+            $transacaoDTO->descricao_transacao = "Cartão recusado para a compra de saldo do cliente {$transacaoDTO->nome} CPF: {$transacaoDTO->cpf}";
+            $this->transacaoRepository->updateTransacao($transacaoDTO);
+            Log::warning("Cartão recusado: {$e->getMessage()}");
+            return new ResponseDTO('erro', 'Cartão recusado', null);
+
+        } catch (\Stripe\Exception\RateLimitException|\Stripe\Exception\ApiConnectionException|\Stripe\Exception\ApiErrorException $e) {
+            // Erros temporários - vale reprocessar
+            $transacaoDTO->retentativa = ($transacaoDTO->retentativa + 1);
+            $body = $this->crypto->encrypt($transacaoDTO->__toString());
+            $this->reprocessamentoComprasCartaoRabbitMQAdapter->enfilerarReprocessamentoComprasCartao($body);
+            Log::error("Erro temporário Stripe: {$e->getMessage()}");
+            return new ResponseDTO('erro', 'Erro temporário, pode reprocessar', null);
 
         } catch (\Throwable $th) {
-            Log::error("Erro ao criar transação de compra de saldo: {$th->getMessage()} | {$th->getFile()} | linha: {$th->getLine()} | trace: {$th->getTraceAsString()}");
-            return new ResponseDTO('erro', 'Não foi possível criar a transação de compra de saldo');
+            // Erro inesperado - geralmente não reprocessável
+            Log::error("Erro inesperado: {$th->getMessage()} | {$th->getFile()} | linha: {$th->getLine()}");
+            return new ResponseDTO('erro', 'Erro inesperado', null);
         }
     }
 

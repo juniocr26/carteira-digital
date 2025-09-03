@@ -40,4 +40,14 @@ return [
         'public' => env('STRIPE_PUBLIC'),
     ],
 
+    'rabbitmq' => [
+        'reprocessamento_compras' => [
+            'host' => env('RABBITMQ_HOST'),
+            'port' => env('RABBITMQ_PORT'),
+            'username' => env('RABBITMQ_USER'),
+            'password' => env('RABBITMQ_PASS'),
+            'vhost' => env('RABBITMQ_VHOST'),
+        ]
+    ]
+
 ];
