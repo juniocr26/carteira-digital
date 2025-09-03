@@ -44,7 +44,9 @@ class TransacaoUseCase
         Stripe::setApiKey(config('services.stripe.secret'));
 
         try {
-            $paymentIntent = $this->criarPaymentIntent($transacaoDTO);
+            $paymentIntent = $isRetentativa && $transacaoDTO->payment_method_id
+                ? $this->retriveAndConfirmPaymentIntent($transacaoDTO->payment_method_id)
+                : $this->criarPaymentIntent($transacaoDTO);
 
             if ($paymentIntent->status === 'succeeded') {
                 $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
@@ -57,6 +59,8 @@ class TransacaoUseCase
                 return new ResponseDTO('sucesso', 'Compra realizada com sucesso');
             }
 
+            $this->marcarRecusado($transacaoDTO);
+            Log::warning("Pagamento não concluído");
             return new ResponseDTO('erro', 'Pagamento não concluído');
 
         } catch (\Stripe\Exception\CardException $e) {
@@ -88,6 +92,19 @@ class TransacaoUseCase
                 'allow_redirects' => 'never',
             ],
         ]);
+    }
+
+    private function retriveAndConfirmPaymentIntent(string $paymentIntentId): PaymentIntent
+    {
+        $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
+
+        // Confirma novamente apenas se estiver aguardando confirmação ou ação do usuário
+        if (in_array($paymentIntent->status, ['requires_confirmation', 'requires_action'])) {
+            $paymentIntent->confirm();
+            $paymentIntent = PaymentIntent::retrieve($paymentIntentId); // Atualiza o status
+        }
+
+        return $paymentIntent;
     }
 
     private function marcarRecusado(TransacaoDTO $transacaoDTO): void
