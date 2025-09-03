@@ -7,16 +7,14 @@ enum TipoTransacaoEnum: string {
     case COMPRA_SALDO_CARTAO_CREDITO    = '1';
     case COMPRA_CARTAO_CREDITO          = '2';
     case COMPRA_USANDO_SALDO            = '3';
-    case DEBITO                         = '4';
-    case ESTORNO                        = '5';
+    case ESTORNO                        = '4';
 
     public function isDebito(): bool
     {
         return match($this) {
             self::COMPRA_SALDO_CARTAO_CREDITO,
             self:: ESTORNO => false,
-            self::COMPRA_USANDO_SALDO,
-            self::DEBITO => true,
+            self::COMPRA_USANDO_SALDO => true,
             default => true,
         };
     }
