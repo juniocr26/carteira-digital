@@ -11,7 +11,7 @@ class TransacaoDTO extends DTOBase
     public int $retentativa = 0;
 
     public function __construct(
-        public string $payment_intent_id,
+        public string $payment_method_id,
         public float $valor_compra,
         public SituacaoTransacaoEnum $situacao_transacao,
         public string $descricao_transacao,
@@ -25,7 +25,7 @@ class TransacaoDTO extends DTOBase
     public function __toString(): string
     {
         return json_encode([
-            'payment_intent_id'   => $this->payment_intent_id,
+            'payment_method_id'   => $this->payment_method_id,
             'valor_compra'        => $this->valor_compra,
             'situacao_transacao'  => $this->situacao_transacao->value,
             'descricao_transacao' => $this->descricao_transacao,

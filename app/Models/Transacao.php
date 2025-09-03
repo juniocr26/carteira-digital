@@ -13,7 +13,7 @@ class Transacao extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-            'payment_intent_id',
+            'payment_method_id',
             'valor_compra',
             'situacao_transacao',
             'descricao_transacao',

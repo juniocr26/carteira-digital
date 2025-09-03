@@ -138,7 +138,7 @@
                             "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
                         body: JSON.stringify({
-                            payment_intent_id: paymentMethod.id,
+                            payment_method_id: paymentMethod.id,
                             valor_compra: valorCompra,
                             cpf: cpf,
                             nome: cardholderName,
