@@ -10,7 +10,7 @@ class CriptografiaTest extends TestCase
     public function testEncryptAndDecryptJsonData(): void
     {
         $originalData = [
-            "payment_method_id"     => "pm_1S2tzoJmY2H3x9sXSFZ9VWcd",
+            "payment_intent_id"     => "pm_1S2tzoJmY2H3x9sXSFZ9VWcd",
             "valor_compra"          => "100",
             "nome"                  => "Teste Nome",
             "cpf"                   => "00000000000",

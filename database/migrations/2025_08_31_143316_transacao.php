@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('transacao', function (Blueprint $table) {
             $table->string('oid_transacao', 36)->primary()->default(DB::raw('(UUID())'));
-            $table->string('payment_method_id');
+            $table->string('payment_intent_id');
             $table->decimal('valor_compra', 10, 2)->default(0);
             $table->string('situacao_transacao', 2);
             $table->string('descricao_transacao');

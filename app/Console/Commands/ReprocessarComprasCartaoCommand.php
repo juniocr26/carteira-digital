@@ -63,7 +63,7 @@ class ReprocessarComprasCartaoCommand extends Command
 
         // Cria DTO
         $transacaoDTO = new TransacaoDTO(
-            $transacaoData->payment_method_id,
+            $transacaoData->payment_intent_id,
             $transacaoData->valor_compra,
             SituacaoTransacaoEnum::from($transacaoData->situacao_transacao),
             $transacaoData->descricao_transacao,

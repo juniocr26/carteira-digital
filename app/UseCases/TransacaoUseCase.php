@@ -44,8 +44,8 @@ class TransacaoUseCase
         Stripe::setApiKey(config('services.stripe.secret'));
 
         try {
-            $paymentIntent = $isRetentativa && $transacaoDTO->payment_method_id
-                ? $this->retriveAndConfirmPaymentIntent($transacaoDTO->payment_method_id)
+            $paymentIntent = $isRetentativa && $transacaoDTO->payment_intent_id
+                ? $this->retriveAndConfirmPaymentIntent($transacaoDTO->payment_intent_id)
                 : $this->criarPaymentIntent($transacaoDTO);
 
             if ($paymentIntent->status === 'succeeded') {
@@ -84,7 +84,7 @@ class TransacaoUseCase
         return PaymentIntent::create([
             'amount' => $transacaoDTO->valor_compra * 100,
             'currency' => 'brl',
-            'payment_method' => $transacaoDTO->payment_method_id,
+            'payment_method' => $transacaoDTO->payment_intent_id,
             'confirm' => true,
             'description' => $transacaoDTO->descricao_transacao,
             'automatic_payment_methods' => [
@@ -143,7 +143,7 @@ class TransacaoUseCase
     {
         $objeto = json_decode($this->crypto->decrypt($request['body']));
         return new TransacaoDTO(
-            $objeto->payment_method_id,
+            $objeto->payment_intent_id,
             $objeto->valor_compra,
             $situacaoTransacaoEnum,
             $objeto->descricao_transacao,
