@@ -2,9 +2,12 @@
 
 namespace App\UseCases;
 
+use App\DTO\SaldoDTO;
 use App\DTO\TransacaoDTO;
 use App\Enums\SituacaoTransacaoEnum;
 use App\Enums\TipoTransacaoEnum;
+use App\Repository\Interfaces\SaldoRepositoryInterface;
+use App\Repository\SaldoRepository;
 use CriptoLib\Crypto;
 use App\DTO\ResponseDTO;
 use App\Repository\TransacaoRepository;
@@ -19,6 +22,7 @@ class TransacaoUseCase
 {
     public function __construct(
         private TransacaoRepositoryInterface $transacaoRepository = new TransacaoRepository(),
+        private SaldoRepositoryInterface $saldoRepository = new SaldoRepository(),
         private $crypto = new Crypto()
     ) {}
 
@@ -46,6 +50,8 @@ class TransacaoUseCase
                 $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
                 $transacaoDTO->data_pagamento = now()->format('Y-m-d H:i:s');
                 $this->transacaoRepository->updateTransacao($transacaoDTO);
+                $saldoDTO = $this->_criandoSaldo($transacaoDTO);
+                $this->saldoRepository->updateSaldo($saldoDTO, $transacaoDTO->tipo_transacao);
             }
             return new ResponseDTO('sucesso', 'Compra com saldo atualizada com sucesso', $paymentIntent);
 
@@ -88,6 +94,15 @@ class TransacaoUseCase
             $tipo_transacao,
             $objeto->nome,
             $objeto->cpf,
+            now()->format('Y-m-d H:i:s')
+        );
+    }
+
+    private function _criandoSaldo(TransacaoDTO $transacaoDTO): SaldoDTO
+    {
+        return new SaldoDTO(
+            $transacaoDTO->cpf,
+            $transacaoDTO->valor_compra,
             now()->format('Y-m-d H:i:s')
         );
     }

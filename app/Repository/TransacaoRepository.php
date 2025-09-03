@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Repository;
-use App\DTO\ResponseDTO;
 use App\DTO\TransacaoDTO;
 use App\Models\Transacao;
 use App\Repository\Interfaces\TransacaoRepositoryInterface;
@@ -30,23 +29,6 @@ class TransacaoRepository implements TransacaoRepositoryInterface {
                 'data_transacao'        => $transacaoDTO->data_transacao,
                 'data_pagamento'        => $transacaoDTO->data_pagamento,
             ]
-        );
-    }
-
-
-    /**
-     * =================================================================
-     *  Helpers
-     * =================================================================
-     */
-
-    private function _formatarCompraSaldoParaDTO(array $compraSaldo): CompraSaldoDTO {
-        return new CompraSaldoDTO(
-            $compraSaldo['payment_method_id'],
-            $compraSaldo['valor_compra'],
-            $compraSaldo['situacao_transacao'],
-            $compraSaldo['nome'],
-            $compraSaldo['cpf']
         );
     }
 }
