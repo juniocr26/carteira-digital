@@ -1,6 +1,6 @@
 FROM php:8.3-fpm
 
-# Instalar dependências
+# Instalar dependências do sistema
 RUN apt-get update && apt-get install -y \
     git curl unzip zip libpng-dev libjpeg-dev libfreetype6-dev \
     libonig-dev libxml2-dev libzip-dev npm gnupg supervisor openssh-client \
@@ -15,34 +15,36 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
 # Instalar Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copiar config do Supervisor
+# Copiar configuração do Supervisor
 COPY docker/supervisor/normal.conf /etc/supervisor/conf.d/normal.conf
 
-# Setar diretório de trabalho
+# Definir diretório de trabalho
 WORKDIR /var/www
 
-# Copiar código do projeto
+# Copiar composer.json e composer.lock para que o Composer consiga instalar
+COPY composer.json composer.lock ./
+
+# Copiar o restante do código
 COPY . .
 
 # Copiar chaves SSH para acessar repositórios privados
 RUN mkdir -p /root/.ssh
 COPY docker/ssh/id_rsa /root/.ssh/id_rsa
 COPY docker/ssh/id_rsa.pub /root/.ssh/id_rsa.pub
-
-# Ajustar permissões das chaves
 RUN chmod 600 /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa.pub \
     && ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
-
-# Instalar dependências do Composer (sem scripts do Laravel)
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
 # Copiar entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Ajustar permissões do projeto para www-data (opcional)
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www \
+    && chmod +x /var/www/artisan
+
 # Definir entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-# Rodar Supervisor como processo principal do container
+# Rodar Supervisor como processo principal
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf", "-n"]
-
