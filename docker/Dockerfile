@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     git curl unzip zip libpng-dev libjpeg-dev libfreetype6-dev \
     libonig-dev libxml2-dev libzip-dev npm gnupg supervisor \
     && docker-php-ext-configure gd \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd sockets \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar Node.js 18 e npm
