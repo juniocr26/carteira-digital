@@ -65,6 +65,19 @@ yes
 
 Pronto! O ambiente da **Carteira Criptografia** está configurado e pronto para uso. Agora você pode começar a desenvolver ou testar transações utilizando a Stripe.
 
+## Estrutura do Projeto
+
+* `docker/` → Dockerfiles e configuração dos containers
+* `src/` → Código-fonte da aplicação
+* `.env` → Variáveis de ambiente do projeto
+* `docker-compose.yml` → Orquestração dos containers
+
+## Requisitos
+
+* Docker e Docker Compose instalados
+* Conta no GitHub para adicionar a chave SSH
+* Conexão com a internet para baixar dependências
+
 ## Problema: Public Key Retrieval
 
 Se você estiver utilizando MySQL 8 ou superior, pode ocorrer o erro:
@@ -84,7 +97,7 @@ Isso acontece porque o MySQL exige autenticação segura e o driver JDBC não es
    DB_CONNECTION=mysql
    DB_HOST=mysql
    DB_PORT=3306
-   DB_DATABASE=padaria
+   DB_DATABASE=carteira-digital
    DB_USERNAME=root
    DB_PASSWORD=secret
    DB_ALLOW_PUBLIC_KEY_RETRIEVAL=true
