@@ -24,4 +24,3 @@ Homestead.yaml
 Thumbs.db
 .docketerized-mysql
 package-lock.json
-docker/rsa/id_rsa
