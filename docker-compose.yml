@@ -7,7 +7,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: carteira-digital-app
     volumes:
-      - .:/var/www
+      - .:/var/www           # mantém seu código sincronizado
     working_dir: /var/www
     networks:
       - carteira-digital
@@ -16,6 +16,7 @@ services:
     depends_on:
       - db
       - rabbitmq
+    command: ["sh", "-c", "composer install && /usr/bin/supervisord -c /etc/supervisor/supervisord.conf -n"]
 
   webserver:
     image: nginx:alpine
