@@ -65,6 +65,51 @@ yes
 
 Pronto! O ambiente da **Carteira Criptografia** está configurado e pronto para uso. Agora você pode começar a desenvolver ou testar transações utilizando a Stripe.
 
+## Problema: Public Key Retrieval
+
+Se você estiver utilizando MySQL 8 ou superior, pode ocorrer o erro:
+
+```
+Public Key Retrieval is not allowed
+```
+
+Isso acontece porque o MySQL exige autenticação segura e o driver JDBC não está autorizado a buscar a chave pública do servidor.
+
+### Como resolver
+
+1. **Permitir a recuperação da chave pública**
+   No arquivo de configuração da conexão com o banco de dados (`.env` ou configuração do Laravel), adicione:
+
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=mysql
+   DB_PORT=3306
+   DB_DATABASE=padaria
+   DB_USERNAME=root
+   DB_PASSWORD=secret
+   DB_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+   DB_USE_SSL=false
+   ```
+
+   Ou, se estiver usando o **JDBC URL** diretamente, inclua os parâmetros:
+
+   ```
+   jdbc:mysql://host:3306/banco?allowPublicKeyRetrieval=true&useSSL=false
+   ```
+
+2. **Alternativa (alterar o plugin de autenticação do usuário)**
+   No MySQL, você pode alterar o plugin de autenticação para `mysql_native_password`:
+
+   ```sql
+   ALTER USER 'usuario'@'%' IDENTIFIED WITH mysql_native_password BY 'sua_senha';
+   FLUSH PRIVILEGES;
+   ```
+
+3. **Usar SSL** (opcional e recomendado)
+   Se quiser manter a conexão segura, configure o SSL no Laravel/DBeaver e defina `DB_USE_SSL=true`.
+
+Após essas alterações, reinicie a aplicação ou container para que a conexão com o MySQL funcione corretamente.
+
 ## Estrutura do Projeto
 
 * `docker/` → Dockerfiles e configuração dos containers
