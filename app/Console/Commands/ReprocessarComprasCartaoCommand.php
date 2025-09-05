@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use App\Adapters\RabbitMQ\Interfaces\ReprocessamentoComprasCartaoRabbitMQAdapterInterface;
+use CriptoLib\Crypto;
 use App\DTO\TransacaoDTO;
-use App\Enums\SituacaoTransacaoEnum;
+use Illuminate\Console\Command;
 use App\Enums\TipoTransacaoEnum;
 use App\UseCases\TransacaoUseCase;
-use CriptoLib\Crypto;
-use Illuminate\Console\Command;
 use PhpAmqpLib\Message\AMQPMessage;
+use App\Enums\SituacaoTransacaoEnum;
+use App\Repository\Interfaces\TransacaoRepositoryInterface;
+use App\Adapters\RabbitMQ\Interfaces\ReprocessamentoComprasCartaoRabbitMQAdapterInterface;
 
 class ReprocessarComprasCartaoCommand extends Command
 {
@@ -19,15 +20,18 @@ class ReprocessarComprasCartaoCommand extends Command
     protected ReprocessamentoComprasCartaoRabbitMQAdapterInterface $reprocessamentoComprasCartaoAdapter;
     protected Crypto $crypto;
     protected TransacaoUseCase $transacaoUseCase;
+    protected TransacaoRepositoryInterface $transacaoRepository;
 
     public function __construct(
         ReprocessamentoComprasCartaoRabbitMQAdapterInterface $reprocessamentoComprasCartaoAdapter,
         Crypto $crypto,
-        TransacaoUseCase $transacaoUseCase
+        TransacaoUseCase $transacaoUseCase,
+        TransacaoRepositoryInterface $transacaoRepository
     ) {
         $this->reprocessamentoComprasCartaoAdapter = $reprocessamentoComprasCartaoAdapter;
         $this->crypto = $crypto;
         $this->transacaoUseCase = $transacaoUseCase;
+        $this->transacaoRepository = $transacaoRepository;
 
         parent::__construct();
     }
@@ -54,12 +58,7 @@ class ReprocessarComprasCartaoCommand extends Command
         $transacaoData = $this->crypto->decrypt($messageBody->body);
         $transacaoData = json_decode($transacaoData);
 
-        // Verifica limite de retentativas
-        if ($transacaoData->retentativa > 3) {
-            $channel->basic_reject($deliveryTag, false);
-            $this->info("Mensagem rejeitada após 3 tentativas: {$transacaoData->descricao_transacao}");
-            return;
-        }
+        \Log::warning("O Pagamento está em retentativa {$transacaoData->retentativa}");
 
         // Cria DTO
         $transacaoDTO = new TransacaoDTO(
@@ -74,13 +73,22 @@ class ReprocessarComprasCartaoCommand extends Command
             $transacaoData->data_pagamento ?? null
         );
 
+        // Verifica limite de retentativas
+        if ($transacaoData->retentativa > 3) {
+            $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
+            $this->transacaoRepository->updateTransacao($transacaoDTO);
+            $this->info("Mensagem rejeitada após 3 tentativas: {$transacaoData->descricao_transacao}");
+            $channel->basic_reject($deliveryTag, false);
+            return;
+        }
+
         $transacaoDTO->retentativa = $transacaoData->retentativa;
+        $this->info("Mensagem processada com sucesso: {$transacaoDTO->descricao_transacao}");
 
         // Executa retentativa via UseCase
         $this->transacaoUseCase->retentativaPagamento($transacaoDTO);
 
         // Confirma a mensagem
         $channel->basic_ack($deliveryTag);
-        $this->info("Mensagem processada com sucesso: {$transacaoDTO->descricao_transacao}");
     }
 }
