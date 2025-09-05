@@ -4,6 +4,7 @@ FROM php:8.3-fpm
 RUN apt-get update && apt-get install -y \
     git curl unzip zip libpng-dev libjpeg-dev libfreetype6-dev \
     libonig-dev libxml2-dev libzip-dev npm gnupg supervisor openssh-client \
+    iputils-ping netcat-traditional \
     && docker-php-ext-configure gd \
     && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd sockets \
     && rm -rf /var/lib/apt/lists/*

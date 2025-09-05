@@ -14,8 +14,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
   webserver:
     image: nginx:alpine
@@ -48,6 +50,11 @@ services:
       - ./.docketerized-mysql/mysql:/var/lib/mysql
     networks:
       - carteira-digital
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${DB_USERNAME}", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -62,6 +69,11 @@ services:
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
     networks:
       - carteira-digital
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   carteira-digital:
