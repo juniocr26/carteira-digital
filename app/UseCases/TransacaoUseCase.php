@@ -19,6 +19,8 @@ use App\Http\Requests\BodyRequest;
 
 class TransacaoUseCase
 {
+    private const MAX_RETENTATIVAS = 3;
+
     public function __construct(
         private TransacaoRepositoryInterface $transacaoRepository,
         private SaldoRepositoryInterface $saldoRepository,
@@ -47,6 +49,8 @@ class TransacaoUseCase
             $paymentIntent = $isRetentativa && $transacaoDTO->payment_method_id
                 ? $this->retriveAndConfirmPaymentIntent($transacaoDTO->payment_method_id)
                 : $this->criarPaymentIntent($transacaoDTO);
+
+            Log::info("Status PaymentIntent: {$paymentIntent->status}");
 
             if ($paymentIntent->status === 'succeeded') {
                 $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::APROVADO;
@@ -98,10 +102,10 @@ class TransacaoUseCase
     {
         $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
 
-        // Confirma novamente apenas se estiver aguardando confirmação ou ação do usuário
-        if (in_array($paymentIntent->status, ['requires_confirmation', 'requires_action'])) {
+        // Confirma apenas se estiver aguardando confirmação
+        if ($paymentIntent->status === 'requires_confirmation') {
             $paymentIntent->confirm();
-            $paymentIntent = PaymentIntent::retrieve($paymentIntentId); // Atualiza o status
+            $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
         }
 
         return $paymentIntent;
@@ -116,6 +120,11 @@ class TransacaoUseCase
 
     private function reprocessarTransacao(TransacaoDTO $transacaoDTO): void
     {
+        if ($transacaoDTO->retentativa >= self::MAX_RETENTATIVAS) {
+            Log::warning("Número máximo de retentativas atingido para {$transacaoDTO->cpf}");
+            return;
+        }
+
         $transacaoDTO->retentativa++;
         $body = $this->crypto->encrypt($transacaoDTO->__toString());
         $this->reprocessamentoAdapter->enfilerarReprocessamentoComprasCartao($body);
