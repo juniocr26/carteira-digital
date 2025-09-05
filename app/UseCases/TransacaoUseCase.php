@@ -102,10 +102,8 @@ class TransacaoUseCase
     {
         $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
 
-        // Confirma apenas se estiver aguardando confirmação
-        if ($paymentIntent->status === 'requires_confirmation') {
-            $paymentIntent->confirm();
-            $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
+        if (in_array($paymentIntent->status, ['requires_confirmation', 'requires_action'])) {
+            $paymentIntent = $paymentIntent->confirm(); // já retorna atualizado
         }
 
         return $paymentIntent;
