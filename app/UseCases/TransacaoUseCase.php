@@ -101,11 +101,11 @@ class TransacaoUseCase
 
     private function processarPagamento(TransacaoDTO $transacaoDTO, bool $isRetentativa): ResponseDTO
     {
-        Stripe::setApiKey(config('services.stripe.secret'));
+        Stripe::setApiKey(env('STRIPE_SECRET'));
 
         try {
             $paymentIntent = $isRetentativa && $transacaoDTO->payment_method_id
-                ? $this->retriveAndConfirmPaymentIntent($transacaoDTO->payment_method_id)
+                ? $this->retriveAndConfirmPaymentIntent($transacaoDTO)
                 : $this->criarPaymentIntent($transacaoDTO);
 
             Log::info("Status PaymentIntent: {$paymentIntent->status}");
@@ -131,11 +131,13 @@ class TransacaoUseCase
             return new ResponseDTO('erro', 'Cartão recusado');
 
         } catch (\Stripe\Exception\RateLimitException|\Stripe\Exception\ApiConnectionException|\Stripe\Exception\ApiErrorException $e) {
+            $transacaoDTO->payment_intent_is_null = is_null($paymentIntent);
             $this->reprocessarTransacao($transacaoDTO);
             Log::error("Erro temporário Stripe: {$e->getMessage()}");
             return new ResponseDTO('erro', 'Erro temporário, pode reprocessar');
 
         } catch (\Throwable $th) {
+            $this->marcarRecusado($transacaoDTO);
             Log::error("Erro inesperado: {$th->getMessage()} | {$th->getFile()} | linha: {$th->getLine()}");
             return new ResponseDTO('erro', 'Erro inesperado');
         }
@@ -156,12 +158,16 @@ class TransacaoUseCase
         ]);
     }
 
-    private function retriveAndConfirmPaymentIntent(string $paymentIntentId): PaymentIntent
+    private function retriveAndConfirmPaymentIntent(TransacaoDTO $transacaoDTO): PaymentIntent
     {
-        $paymentIntent = PaymentIntent::retrieve($paymentIntentId);
+        if(!$transacaoDTO->payment_intent_is_null){
+            $paymentIntent = PaymentIntent::retrieve($transacaoDTO->payment_method_id);
 
-        if (in_array($paymentIntent->status, ['requires_confirmation', 'requires_action'])) {
-            $paymentIntent = $paymentIntent->confirm(); // já retorna atualizado
+            if (in_array($paymentIntent->status, ['requires_confirmation', 'requires_action'])) {
+                $paymentIntent = $paymentIntent->confirm(); // já retorna atualizado
+            }
+        }else{
+            $paymentIntent = $this->criarPaymentIntent($transacaoDTO);
         }
 
         return $paymentIntent;

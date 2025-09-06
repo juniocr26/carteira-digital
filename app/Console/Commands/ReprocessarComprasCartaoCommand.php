@@ -72,6 +72,7 @@ class ReprocessarComprasCartaoCommand extends Command
             $transacaoData->data_transacao ?? null,
             $transacaoData->data_pagamento ?? null
         );
+        $transacaoDTO->payment_intent_is_null = $transacaoData->payment_intent_is_null;
 
         // Verifica limite de retentativas
         if ($transacaoData->retentativa > 3) {
