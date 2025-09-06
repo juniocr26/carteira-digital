@@ -177,6 +177,8 @@ class TransacaoUseCase
     private function reprocessarTransacao(TransacaoDTO $transacaoDTO): void
     {
         if ($transacaoDTO->retentativa >= self::MAX_RETENTATIVAS) {
+            $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
+            $this->transacaoRepository->updateTransacao($transacaoDTO);
             Log::warning("Número máximo de retentativas atingido para {$transacaoDTO->cpf}");
             return;
         }
