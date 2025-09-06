@@ -23,6 +23,10 @@
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
 
+                <!-- Aviso de processamento -->
+                <div id="warning-message" class="hidden mb-4 p-3 rounded bg-yellow-100 border border-yellow-300 text-yellow-800 text-sm">
+                    O pagamento está sendo processado, você será notificado quando houver uma atualização.
+                </div>
                 <form id="payment-form" class="space-y-6">
 
                     <!-- Nome do titular -->
@@ -102,6 +106,19 @@
         const loading = document.getElementById('loading');
         cardElement.mount('#card-element');
 
+        window.Pusher = Pusher;
+        window.Echo = new Echo({
+            broadcaster: 'pusher',
+            key: "{{ env('PUSHER_APP_KEY') }}",
+            cluster: "{{ env('PUSHER_APP_CLUSTER') }}",
+            forceTLS: true,
+            auth: {
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }
+        });
+
         // Máscara CPF
         const cpfInput = document.getElementById('cpf');
         cpfInput.addEventListener('input', function(e) {
@@ -155,7 +172,53 @@
                     });
 
                     const data = await response.json();
-                    loading.classList.add('hidden'); // Esconde loading
+
+                    switch (data.status) {
+                        case 'sucesso':
+                            loading.classList.add('hidden'); // Esconde loading
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: data.message
+                            });
+                            break;
+
+                        case 'warning-message':
+                            document.getElementById('warning-message').classList.remove('hidden');
+                            // Captura transaction_id do backend (precisa retornar isso na resposta do Laravel)
+                            const transactionId = data.content;
+                            window.Echo.private(`transacao.${transactionId}`)
+                                .listen('PagamentoProcessado', (e) => {
+                                    // Esconde o aviso
+                                    document.getElementById('warning-message').classList.add('hidden');
+                                    loading.classList.add('hidden'); // Esconde loading
+
+                                    if (e.status === 'sucesso') {
+                                        Swal.fire({ icon: 'success', title: 'Sucesso', text: e.message });
+                                    } else {
+                                        Swal.fire({ icon: 'error', title: 'Erro', text: e.message });
+                                    }
+                                });
+                            break;
+
+                        case 'erro':
+                            loading.classList.add('hidden'); // Esconde loading
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro',
+                                text: data.message || 'Tente novamente'
+                            });
+                            break;
+
+                        default:
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Erro',
+                                text: data.message || 'Tente novamente'
+                            });
+                            break;
+                    }
+
 
                     if (data.status === 'sucesso') {
                         Swal.fire({ icon: 'success', title: 'Sucesso', text: data.message });

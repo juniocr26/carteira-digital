@@ -42,12 +42,13 @@ class TransacaoController extends Controller
     {
         try {
             $result = $this->transacaoUseCase->realizaCompraCartaoCredito($request->all());
-            if ($result->status == 'sucesso') { $statusCode = 201; }
+            if ($result->status == 'sucesso' || $result->status == 'warning') { $statusCode = 201; }
             if ($result->status == 'erro') { $statusCode = 400; }
 
             return response()->json([
                 'status' => $result->status,
                 'message' => $result->message,
+                'content' => $result->content ?? ''
             ], $statusCode);
         } catch (\Throwable $th) {
             return response()->json([

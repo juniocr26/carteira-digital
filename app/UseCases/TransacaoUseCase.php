@@ -2,20 +2,21 @@
 
 namespace App\UseCases;
 
-use App\Adapters\RabbitMQ\Interfaces\ReprocessamentoComprasCartaoRabbitMQAdapterInterface;
+use Stripe\Stripe;
 use App\DTO\SaldoDTO;
-use App\DTO\TransacaoDTO;
+use CriptoLib\Crypto;
 use App\DTO\ResponseDTO;
-use App\Enums\SituacaoTransacaoEnum;
+use App\DTO\TransacaoDTO;
+use Stripe\PaymentIntent;
+use Illuminate\Http\Request;
 use App\Enums\TipoTransacaoEnum;
+use App\Http\Requests\BodyRequest;
+use App\Events\PagamentoProcessado;
+use Illuminate\Support\Facades\Log;
+use App\Enums\SituacaoTransacaoEnum;
 use App\Repository\Interfaces\SaldoRepositoryInterface;
 use App\Repository\Interfaces\TransacaoRepositoryInterface;
-use CriptoLib\Crypto;
-use Stripe\Stripe;
-use Stripe\PaymentIntent;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Request;
-use App\Http\Requests\BodyRequest;
+use App\Adapters\RabbitMQ\Interfaces\ReprocessamentoComprasCartaoRabbitMQAdapterInterface;
 
 class TransacaoUseCase
 {
@@ -118,6 +119,9 @@ class TransacaoUseCase
                 $saldoDTO = $this->_criandoSaldo($transacaoDTO);
                 $this->saldoRepository->updateSaldo($saldoDTO, $transacaoDTO->tipo_transacao);
 
+                if($transacaoDTO->retentativa > 0) {
+                    event(new PagamentoProcessado($transacaoDTO->payment_method_id, 'sucesso', 'Pagamento aprovado!'));
+                }
                 return new ResponseDTO('sucesso', 'Compra realizada com sucesso');
             }
 
@@ -133,8 +137,8 @@ class TransacaoUseCase
         } catch (\Stripe\Exception\RateLimitException|\Stripe\Exception\ApiConnectionException|\Stripe\Exception\ApiErrorException $e) {
             $transacaoDTO->payment_intent_is_null = is_null($paymentIntent);
             $this->reprocessarTransacao($transacaoDTO);
-            Log::error("Erro temporário Stripe: {$e->getMessage()}");
-            return new ResponseDTO('erro', 'Erro temporário, pode reprocessar');
+            Log::warning("Erro temporário Stripe: {$e->getMessage()}");
+            return new ResponseDTO('warning', 'Erro temporário, pode reprocessar', $transacaoDTO->payment_method_id);
 
         } catch (\Throwable $th) {
             $this->marcarRecusado($transacaoDTO);
@@ -185,6 +189,7 @@ class TransacaoUseCase
         if ($transacaoDTO->retentativa >= self::MAX_RETENTATIVAS) {
             $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
             $this->transacaoRepository->updateTransacao($transacaoDTO);
+            event(new PagamentoProcessado($transacaoDTO->payment_method_id, 'erro', 'Pagamento não aprovado'));
             Log::warning("Número máximo de retentativas atingido para {$transacaoDTO->cpf}");
             return;
         }
