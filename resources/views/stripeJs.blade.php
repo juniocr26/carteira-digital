@@ -69,8 +69,11 @@
                             Pagar
                         </button>
                     </div>
+                    <!-- GIF de carregamento -->
+                    <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <img src="{{ asset('loading.gif') }}" alt="Carregando..." class="w-24 h-24">
+                    </div>
                 </form>
-
             </div>
         </div>
     </main>
@@ -96,6 +99,7 @@
         const stripe = Stripe("{{ env('STRIPE_PUBLIC') }}");
         const elements = stripe.elements();
         const cardElement = elements.create('card', { hidePostalCode: true });
+        const loading = document.getElementById('loading');
         cardElement.mount('#card-element');
 
         // Máscara CPF
@@ -111,6 +115,9 @@
         const form = document.getElementById('payment-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // Mostra a GIF
+            loading.classList.remove('hidden');
 
             const cardholderName = document.getElementById('cardholder-name').value;
             const cpf = document.getElementById('cpf').value.replace(/\D/g, "");
@@ -148,6 +155,7 @@
                     });
 
                     const data = await response.json();
+                    loading.classList.add('hidden'); // Esconde loading
 
                     if (data.status === 'sucesso') {
                         Swal.fire({ icon: 'success', title: 'Sucesso', text: data.message });
@@ -155,6 +163,7 @@
                         Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Tente novamente' });
                     }
                 } catch (err) {
+                    loading.classList.add('hidden'); // Esconde loading
                     Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao processar pagamento' });
                 }
             }
