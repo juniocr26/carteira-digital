@@ -182,7 +182,7 @@
                             const transactionId = data.content;
 
                             // Agora escuta pelo canal público
-                            const channel = pusher.subscribe(transactionId);
+                            const channel = pusher.subscribe(`private-${transactionId}`);
                                 channel.bind('App\\Events\\PagamentoProcessado', function(e) {
                                     document.getElementById('warning-message').classList.add('hidden');
                                     loading.classList.add('hidden');
