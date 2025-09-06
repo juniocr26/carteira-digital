@@ -93,7 +93,7 @@
             - Fundos insuficientes: 4000 0000 0000 9999
             - 3D Secure obrigatório: 4000 0025 0000 3155
         */
-        const stripe = Stripe('pk_test_51S2rjtJmY2H3x9sXuUFdZO5GFVJjrkc6Ox3lQvoPXkYpRSyn0l4ojmAFdxDgqCFbVaS0tSP0q6a95PfhoNrRJeey000LQaK07l');
+        const stripe = Stripe("{{ env('STRIPE_PUBLIC') }}");
         const elements = stripe.elements();
         const cardElement = elements.create('card', { hidePostalCode: true });
         cardElement.mount('#card-element');

@@ -9,5 +9,6 @@ Route::get('/', function () {
 
 Route::prefix('stripe')->name('stripe.')->group(function () {
     Route::get('/', [TransacaoController::class, 'stripeJs'])->name('index');
+    Route::get('/pix', [TransacaoController::class, 'stripePix'])->name('pix');
     Route::post('/tokenizar', [TransacaoController::class, 'stripeTokenizar'])->name('tokenizar');
 });

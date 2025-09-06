@@ -41,6 +41,64 @@ class TransacaoUseCase
         return $this->processarPagamento($transacaoDTO, false);
     }
 
+    public function realizarCompraPix(array $request): ResponseDTO
+    {
+        try {
+            // Cria transação em estado "pendente"
+            $transacaoDTO = $this->_criandoTransacao($request,SituacaoTransacaoEnum::PENDENTE_PAGAMENTO);
+            $this->transacaoRepository->updateTransacao($transacaoDTO);
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $pi = PaymentIntent::create([
+                'amount' => intval($transacaoDTO->valor_compra * 100), // sempre em centavos
+                'currency' => 'brl',
+                'payment_method_types' => ['pix'],
+                'payment_method_options' => [
+                    'pix' => [
+                        'expires_after_seconds' => 3600,
+                    ],
+                ],
+                'description' => $transacaoDTO->descricao_transacao,
+                'metadata' => [
+                    'id_transacao' => "$transacaoDTO->descricao_transacao as $transacaoDTO->data_transacao",
+                    'cpf' => $transacaoDTO->cpf,
+                    'nome' => $transacaoDTO->nome,
+                ]
+            ]);
+
+            return new ResponseDTO(
+                'sucesso',
+                'Pix gerado com sucesso',
+                [
+                    'client_secret' => $pi->client_secret,
+                    'payment_intent' => $pi
+                ]
+            );
+
+        } catch (\Stripe\Exception\ApiErrorException $e) {
+            $error = $e->getError();
+            $transacaoDTO->situacao_transacao = SituacaoTransacaoEnum::RECUSADO;
+            $this->transacaoRepository->updateTransacao($transacaoDTO);
+
+            // mapeando códigos comuns para Pix
+            switch ($error->code ?? '') {
+                case 'parameter_invalid_integer':
+                    return new ResponseDTO('erro', 'Valor da transação inválido. Informe em centavos.');
+                case 'invalid_request_error':
+                    return new ResponseDTO('erro', 'Requisição inválida. Verifique parâmetros do Pix.');
+                case 'resource_missing':
+                    return new ResponseDTO('erro', 'Transação Pix não encontrada.');
+                case 'payment_intent_unexpected_state':
+                    return new ResponseDTO('erro', 'Este Pix já foi processado ou expirou.');
+                default:
+                    return new ResponseDTO('erro', 'Erro Pix: ' . $error->message);
+            }
+
+        } catch (\Exception $e) {
+            return new ResponseDTO('erro', 'Erro interno: ' . $e->getMessage());
+        }
+    }
+
     private function processarPagamento(TransacaoDTO $transacaoDTO, bool $isRetentativa): ResponseDTO
     {
         Stripe::setApiKey(config('services.stripe.secret'));
@@ -146,18 +204,32 @@ class TransacaoUseCase
         ]);
     }
 
+    public function realizarPostParaRotaComprarPix(string $body)
+    {
+        $request = BodyRequest::create(
+            route('compra.pix'),
+            'POST',
+            ['body' => $body]
+        );
+
+        return app()->call('App\Http\Controllers\TransacaoController@compra_pix', [
+            'request' => $request
+        ]);
+    }
+
     private function _criandoTransacao(array $request, SituacaoTransacaoEnum $situacaoTransacaoEnum): TransacaoDTO
     {
         $objeto = json_decode($this->crypto->decrypt($request['body']));
+        $data_transacao = now()->format('Y-m-d H:i:s');
         return new TransacaoDTO(
-            $objeto->payment_method_id,
+            $objeto->payment_method_id ?? "Compra pix realizada para o CPF: {$objeto->cpf}, as {$data_transacao}",
             $objeto->valor_compra,
             $situacaoTransacaoEnum,
             $objeto->descricao_transacao,
             TipoTransacaoEnum::from($objeto->tipo_transacao),
             $objeto->nome,
             $objeto->cpf,
-            now()->format('Y-m-d H:i:s')
+            $data_transacao
         );
     }
 

@@ -16,7 +16,8 @@ class TransacaoRepository implements TransacaoRepositoryInterface {
         $this->transacaoModel::updateOrCreate(
             [
                 'cpf'               => $transacaoDTO->cpf,
-                'payment_method_id' => $transacaoDTO->payment_method_id
+                'payment_method_id' => $transacaoDTO->payment_method_id,
+                'data_transacao'    => $transacaoDTO->data_transacao
             ],
             [
                 'payment_method_id'     => $transacaoDTO->payment_method_id,

@@ -17,4 +17,5 @@ Route::aliasMiddleware('jwt.auth', JwtMiddleware::class);
 
 Route::middleware('jwt.auth')->prefix('compra')->name('compra.')->group(function () {
     Route::post('/cartao_credito', [TransacaoController::class, 'compra_cartao_credito'])->name('cartao.credito');
+    Route::post('/pix', [TransacaoController::class, 'compra_pix'])->name('pix');
 });
