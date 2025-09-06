@@ -8,6 +8,7 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
@@ -106,19 +107,6 @@
         const loading = document.getElementById('loading');
         cardElement.mount('#card-element');
 
-        window.Pusher = Pusher;
-        window.Echo = new Echo({
-            broadcaster: 'pusher',
-            key: "{{ env('PUSHER_APP_KEY') }}",
-            cluster: "{{ env('PUSHER_APP_CLUSTER') }}",
-            forceTLS: true,
-            auth: {
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            }
-        });
-
         // Máscara CPF
         const cpfInput = document.getElementById('cpf');
         cpfInput.addEventListener('input', function(e) {
@@ -175,23 +163,19 @@
 
                     switch (data.status) {
                         case 'sucesso':
-                            loading.classList.add('hidden'); // Esconde loading
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Sucesso',
-                                text: data.message
-                            });
+                            loading.classList.add('hidden');
+                            Swal.fire({ icon: 'success', title: 'Sucesso', text: data.message });
                             break;
 
-                        case 'warning-message':
+                        case 'warning':
                             document.getElementById('warning-message').classList.remove('hidden');
-                            // Captura transaction_id do backend (precisa retornar isso na resposta do Laravel)
                             const transactionId = data.content;
-                            window.Echo.private(`transacao.${transactionId}`)
+
+                            // Agora escuta pelo canal público
+                            window.Echo.channel(transactionId)
                                 .listen('PagamentoProcessado', (e) => {
-                                    // Esconde o aviso
                                     document.getElementById('warning-message').classList.add('hidden');
-                                    loading.classList.add('hidden'); // Esconde loading
+                                    loading.classList.add('hidden');
 
                                     if (e.status === 'sucesso') {
                                         Swal.fire({ icon: 'success', title: 'Sucesso', text: e.message });
@@ -202,31 +186,18 @@
                             break;
 
                         case 'erro':
-                            loading.classList.add('hidden'); // Esconde loading
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Erro',
-                                text: data.message || 'Tente novamente'
-                            });
+                            loading.classList.add('hidden');
+                            Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Tente novamente' });
                             break;
 
                         default:
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Erro',
-                                text: data.message || 'Tente novamente'
-                            });
+                            loading.classList.add('hidden');
+                            Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Tente novamente' });
                             break;
                     }
 
-
-                    if (data.status === 'sucesso') {
-                        Swal.fire({ icon: 'success', title: 'Sucesso', text: data.message });
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Erro', text: data.message || 'Tente novamente' });
-                    }
                 } catch (err) {
-                    loading.classList.add('hidden'); // Esconde loading
+                    loading.classList.add('hidden');
                     Swal.fire({ icon: 'error', title: 'Erro', text: 'Erro ao processar pagamento' });
                 }
             }
