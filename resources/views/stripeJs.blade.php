@@ -8,7 +8,6 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
 
@@ -83,6 +82,7 @@
         </div>
     </main>
 
+    <script src="https://js.pusher.com/8.2/pusher.min.js"></script>
     <script>
         // Stripe
         /*
@@ -106,6 +106,16 @@
         const cardElement = elements.create('card', { hidePostalCode: true });
         const loading = document.getElementById('loading');
         cardElement.mount('#card-element');
+        // Configura Pusher
+        Pusher.logToConsole = true; // opcional, para debug
+        const pusher = new Pusher("{{ env('PUSHER_APP_KEY') }}", {
+            cluster: "{{ env('PUSHER_APP_CLUSTER') }}",
+            wsHost: "{{ env('PUSHER_HOST', '127.0.0.1') }}",
+            wsPort: {{ env('PUSHER_PORT', 6001) }},
+            forceTLS: false,
+            disableStats: true,
+            encrypted: false
+        });
 
         // Máscara CPF
         const cpfInput = document.getElementById('cpf');
@@ -172,8 +182,8 @@
                             const transactionId = data.content;
 
                             // Agora escuta pelo canal público
-                            window.Echo.channel(transactionId)
-                                .listen('PagamentoProcessado', (e) => {
+                            const channel = pusher.subscribe(transactionId);
+                                channel.bind('App\\Events\\PagamentoProcessado', function(e) {
                                     document.getElementById('warning-message').classList.add('hidden');
                                     loading.classList.add('hidden');
 

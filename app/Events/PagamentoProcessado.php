@@ -26,6 +26,6 @@ class PagamentoProcessado implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new PrivateChannel('transacao.' . $this->transactionId);
+        return new PrivateChannel($this->transactionId);
     }
 }

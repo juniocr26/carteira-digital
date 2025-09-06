@@ -128,13 +128,13 @@ class TransacaoUseCase
             $this->marcarRecusado($transacaoDTO);
             Log::warning("Pagamento não concluído");
             return new ResponseDTO('erro', 'Pagamento não concluído');
-
         } catch (\Stripe\Exception\CardException $e) {
             $this->marcarRecusado($transacaoDTO);
             Log::warning("Cartão recusado: {$e->getMessage()}");
             return new ResponseDTO('erro', 'Cartão recusado');
 
         } catch (\Stripe\Exception\RateLimitException|\Stripe\Exception\ApiConnectionException|\Stripe\Exception\ApiErrorException $e) {
+            $paymentIntent = null;
             $transacaoDTO->payment_intent_is_null = is_null($paymentIntent);
             $this->reprocessarTransacao($transacaoDTO);
             Log::warning("Erro temporário Stripe: {$e->getMessage()}");
@@ -147,8 +147,11 @@ class TransacaoUseCase
         }
     }
 
-    private function criarPaymentIntent(TransacaoDTO $transacaoDTO): PaymentIntent
+    private function criarPaymentIntent(TransacaoDTO $transacaoDTO)
     {
+        if($transacaoDTO->retentativa == 0){
+            throw new \Stripe\Exception\ApiConnectionException();
+        }
         return PaymentIntent::create([
             'amount' => $transacaoDTO->valor_compra * 100,
             'currency' => 'brl',
