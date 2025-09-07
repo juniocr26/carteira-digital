@@ -70,6 +70,24 @@
 </main>
 
 <script>
+    // 💳 Cartões de Teste da Stripe
+
+    // Esses cartões funcionam apenas no ambiente de teste da Stripe.
+    // Use sempre:
+    //   - Validade: qualquer data futura (ex: 12/34)
+    //   - CVC: qualquer número de 3 dígitos (ex: 123)
+    //   - CEP: qualquer CEP válido (ex: 12345)
+
+    // Cartão principal (sempre aprovado):
+    //   4242 4242 4242 4242
+
+    // Outros cenários de teste:
+    //   - 4000 0000 0000 9995 → saldo insuficiente
+    //   - 4000 0000 0000 0002 → cartão recusado (genérico)
+    //   - 4000 0000 0000 9987 → cartão perdido
+    //   - 4000 0000 0000 9979 → cartão roubado
+    //   - 4000 0000 0000 0069 → cartão expirado
+    //   - 4000 0027 6000 3184 → requer autenticação 3D Secure (SCA)
     const stripe = Stripe("{{ env('STRIPE_PUBLIC') }}");
     const elements = stripe.elements();
     const cardElement = elements.create('card', { hidePostalCode: true });

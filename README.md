@@ -97,15 +97,30 @@ Isso acontece porque o MySQL exige autenticação segura e o driver JDBC não es
 
 Após essas alterações, reinicie a aplicação ou container para que a conexão com o MySQL funcione corretamente.
 
-## Estrutura do Projeto
+## 💳 Cartões de Teste da Stripe
 
-* `docker/` → Dockerfiles e configuração dos containers
-* `src/` → Código-fonte da aplicação
-* `.env` → Variáveis de ambiente do projeto
-* `docker-compose.yml` → Orquestração dos containers
+A Stripe fornece cartões fictícios para simular pagamentos no ambiente de **teste**.  
+Eles **não funcionam no mundo real** e devem ser usados apenas em sandbox.
 
-## Requisitos
+### Como usar
+- **Validade** → qualquer data futura (ex: `12/34`)  
+- **CVC** → qualquer número de 3 dígitos (ex: `123`)  
+- **CEP** → qualquer CEP válido (ex: `12345`)  
 
-* Docker e Docker Compose instalados
-* Conta no GitHub para adicionar a chave SSH
-* Conexão com a internet para baixar dependências
+### Cartão principal (sempre aprovado)
+```
+4242 4242 4242 4242
+```
+
+### Exemplos de cenários de teste
+
+| Número do cartão        | Cenário simulado              |
+|--------------------------|-------------------------------|
+| `4000 0000 0000 9995`   | Saldo insuficiente            |
+| `4000 0000 0000 0002`   | Cartão recusado (genérico)    |
+| `4000 0000 0000 9987`   | Cartão perdido                |
+| `4000 0000 0000 9979`   | Cartão roubado                |
+| `4000 0000 0000 0069`   | Cartão expirado               |
+| `4000 0027 6000 3184`   | Requer autenticação 3D Secure |
+
+👉 Esses cartões permitem validar fluxos de pagamento, falhas e autenticação sem precisar de cartões reais.
