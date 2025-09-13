@@ -9,32 +9,43 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd sockets \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 22 e npm
+# Instalar Node.js 22 e npm
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs
 
-# Composer
+# Instalar Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Supervisor
+# Copiar configuração do Supervisor
 COPY docker/supervisor/normal.conf /etc/supervisor/conf.d/normal.conf
 
+# Definir diretório de trabalho
 WORKDIR /var/www
 
-# Copiar chaves SSH
+# Copiar composer.json e composer.lock para que o Composer consiga instalar
+COPY composer.json composer.lock ./
+
+# Copiar o restante do código
+COPY . .
+
+# Copiar chaves SSH para acessar repositórios privados
 RUN mkdir -p /root/.ssh
 COPY docker/ssh/id_rsa /root/.ssh/id_rsa
 COPY docker/ssh/id_rsa.pub /root/.ssh/id_rsa.pub
-RUN chmod 600 /root/.ssh/id_rsa /root/.ssh/id_rsa.pub \
+RUN chmod 600 /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa.pub \
     && ssh-keyscan -t rsa github.com >> /root/.ssh/known_hosts
 
-# Copiar código e entrypoint
-COPY . .
+# Copiar entrypoint
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Apenas garantir que o artisan é executável
-RUN chmod +x /var/www/artisan
+# Ajustar permissões do projeto para www-data (opcional)
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www \
+    && chmod +x /var/www/artisan
 
+# Definir entrypoint
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Rodar Supervisor como processo principal
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf", "-n"]
